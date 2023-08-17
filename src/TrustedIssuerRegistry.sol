@@ -1,18 +1,19 @@
 pragma solidity >=0.8.0 <0.9.0;
 
-import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
-import "openzeppelin-contracts-upgradeable/contracts/utils/cryptography/EIP712Upgradeable.sol";
-import "openzeppelin-contracts-upgradeable/contracts/security/PausableUpgradeable.sol";
-import "openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.sol";
-import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
+import { EIP712Upgradeable } from "@openzeppelin/contracts-upgradeable/utils/cryptography/EIP712Upgradeable.sol";
+import { ECDSAUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
+import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
+import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 contract TrustedIssuerRegistry is Initializable, EIP712Upgradeable, PausableUpgradeable, OwnableUpgradeable, UUPSUpgradeable {
-    mapping(bytes32 => bool) public trusted;
-
     string public VERSION_MAJOR;
     string public VERSION_MINOR;
     string public VERSION_PATCH;
     string internal VERSION_DELIMITER;
+
+    mapping(bytes32 => bool) public trusted;
 
     function initialize() initializer public {
         __Pausable_init();
@@ -34,8 +35,6 @@ contract TrustedIssuerRegistry is Initializable, EIP712Upgradeable, PausableUpgr
         emit TrustedIssuerUpdate(_context, _did, _trusted);
     }
 
-    event TrustedIssuerUpdate(string indexed _context, string indexed _did, bool _trusted);
-
     function version() public view returns (string memory) {
         return string.concat(VERSION_MAJOR, VERSION_DELIMITER, VERSION_MINOR, VERSION_DELIMITER, VERSION_PATCH);
     }
@@ -49,4 +48,6 @@ contract TrustedIssuerRegistry is Initializable, EIP712Upgradeable, PausableUpgr
     }
 
     function _authorizeUpgrade(address newImplementation) internal onlyOwner override {}
+
+    event TrustedIssuerUpdate(string indexed _context, string indexed _did, bool _trusted);
 }
