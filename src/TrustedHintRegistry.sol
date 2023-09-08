@@ -10,7 +10,7 @@ import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils
 
 contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgradeable, OwnableUpgradeable, UUPSUpgradeable {
     mapping(address => mapping(bytes32 => mapping(bytes32 => bytes32))) hints;
-    mapping(bytes32 => mapping(address => uint256)) delegates;
+    mapping(bytes32 => mapping(address => uint256)) public delegates;
     mapping(bytes32 => address) public newOwners;
     mapping(address => uint256) public nonces;
     mapping(bytes32 => bool) public revokedLists;
@@ -127,7 +127,7 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
       * @param _signer Address of signature creator
       * @param _signature Raw signature create according to EIP-712
     */
-    function setHintsSigned(address _namespace, bytes32 _list, bytes32[] calldata _keys, bytes32[] calldata _values, address _signer, bytes calldata _signature) public {
+    function setHintsSigned(address _namespace, bytes32 _list, bytes32[] calldata _keys, bytes32[] calldata _values, address _signer, bytes calldata _signature) public whenNotPaused {
         bytes32 hash = _hashTypedDataV4(keccak256(abi.encode(
             keccak256("SetHintsSigned(address namespace,bytes32 list,bytes32[] keys,bytes32[] values,address signer,uint256 nonce)"),
             _namespace,
@@ -143,20 +143,25 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
         _setHints(_namespace, _list, _keys, _values);
     }
 
+    ///////////////  DELEGATED MANAGEMENT  ///////////////
+
+    function setHintDelegated(address _namespace, bytes32 _list, bytes32 _key, bytes32 _value) public isDelegate(_namespace, _list) whenNotPaused {
+        _setHint(_namespace, _list, _key, _value);
+    }
+
+    function addListDelegate(address _namespace, bytes32 _list, address _delegate, uint256 _untilTimestamp) public isOwner(_namespace, _list) whenNotPaused {
+        require(_untilTimestamp > block.timestamp, "Timestamp must be in the future");
+        delegates[generateListLocationHash(_namespace, _list)][_delegate] = _untilTimestamp;
+    }
+
     function version() public view returns (string memory) {
         return string.concat(VERSION_MAJOR, VERSION_DELIMITER, VERSION_MINOR, VERSION_DELIMITER, VERSION_PATCH);
     }
-
 
     // Misc
 
     function generateListLocationHash(address _namespace, bytes32 _list) pure internal returns (bytes32) {
         return keccak256(abi.encodePacked(_namespace, _list));
-    }
-
-    modifier isOwner(address _namespace, bytes32 _list) {
-        require(identityIsOwner(_namespace, _list, msg.sender), "Caller is not an owner");
-        _;
     }
 
     function identityIsOwner(address _namespace, bytes32 _list, address _identity) view public returns (bool) {
@@ -169,6 +174,23 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
         return false;
     }
 
+    function identityIsDelegate(address _namespace, bytes32 _list, address _identity) view public returns (bool) {
+        bytes32 listLocationHash = generateListLocationHash(_namespace, _list);
+        if (delegates[listLocationHash][_identity] > block.timestamp) {
+            return true;
+        }
+        return false;
+    }
+
+    modifier isOwner(address _namespace, bytes32 _list) {
+        require(identityIsOwner(_namespace, _list, msg.sender), "Caller is not an owner");
+        _;
+    }
+
+    modifier isDelegate(address _namespace, bytes32 _list) {
+        require(identityIsDelegate(_namespace, _list, msg.sender), "Caller is not a delegate");
+        _;
+    }
 
     function pause() public onlyOwner {
         _pause();

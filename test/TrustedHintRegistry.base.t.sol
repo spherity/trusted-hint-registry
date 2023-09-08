@@ -4,7 +4,7 @@ pragma solidity ^0.8.13;
 import { console, Test } from "forge-std/Test.sol";
 import { TrustedHintRegistry } from "../src/TrustedHintRegistry.sol";
 import { Sig712Utils } from "./utils/Sig712Utils.sol";
-
+// TODO: Write tests for the paused case!
 /*
 * @notice Test base functionality of TrustedHintRegistry
 */
@@ -25,9 +25,11 @@ contract BaseTest is Test {
 
     function setUp() public {
         // Owner of this contract is address(0)!
+        vm.startPrank(address(0));
         registry = new TrustedHintRegistry();
         registry.initialize();
         sig712 = new Sig712Utils(registry.version(), address(registry));
+        vm.stopPrank();
 
         // Setup key pair for meta transactions
         peterPrivateKey = 1000000000000000000;
@@ -36,7 +38,9 @@ contract BaseTest is Test {
         marieAddress = vm.addr(mariePrivateKey);
     }
 
+    /////////////////////////////////////////////////
     ///////////////  HINT MANAGEMENT  ///////////////
+    /////////////////////////////////////////////////
 
     function test_SetHint() public {
         vm.prank(address(1));
@@ -263,5 +267,59 @@ contract BaseTest is Test {
             assertEq(registry.getHint(namespace, list, keys[i]), 0);
         }
         assertEq(registry.nonces(peterAddress), 0);
+    }
+
+    /////////////////////////////////////////////////////
+    ///////////////  DELEGATE MANAGEMENT  ///////////////
+    /////////////////////////////////////////////////////
+
+    function test_SetHintDelegated() public {
+        vm.prank(address(1));
+        address namespace = address(1);
+        bytes32 list = keccak256("list");
+        bytes32 key = keccak256("key");
+        bytes32 value = keccak256("value");
+        uint256 untilTimestamp = block.timestamp + 100;
+
+        registry.addListDelegate(namespace, list, peterAddress, untilTimestamp);
+        assertEq(registry.delegates(keccak256(abi.encodePacked(namespace, list)), peterAddress), untilTimestamp);
+
+        vm.prank(peterAddress);
+
+        vm.expectEmit(true, true, true, true, address(registry));
+        emit HintValueChanged(namespace, list, key, value);
+
+        registry.setHintDelegated(namespace, list, key, value);
+    }
+
+    function test_RevertSetHintDelegatedIfCallerNotDelegate() public {
+        vm.prank(address(999999));
+        address namespace = address(1);
+        bytes32 list = keccak256("list");
+        bytes32 key = keccak256("key");
+        bytes32 value = keccak256("value");
+
+        vm.expectRevert("Caller is not a delegate");
+
+        registry.setHintDelegated(namespace, list, key, value);
+    }
+
+    function test_RevertSetHintDelegateIfContractPaused() public {
+        vm.prank(address(1));
+        address namespace = address(1);
+        bytes32 list = keccak256("list");
+        bytes32 key = keccak256("key");
+        bytes32 value = keccak256("value");
+        uint256 untilTimestamp = block.timestamp + 100;
+
+        registry.addListDelegate(namespace, list, peterAddress, untilTimestamp);
+        assertEq(registry.delegates(keccak256(abi.encodePacked(namespace, list)), peterAddress), untilTimestamp);
+
+        vm.prank(address(0));
+        registry.pause();
+
+        vm.prank(peterAddress);
+        vm.expectRevert("Pausable: paused");
+        registry.setHintDelegated(namespace, list, key, value);
     }
 }
