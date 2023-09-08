@@ -152,6 +152,7 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
     function addListDelegate(address _namespace, bytes32 _list, address _delegate, uint256 _untilTimestamp) public isOwner(_namespace, _list) whenNotPaused {
         require(_untilTimestamp > block.timestamp, "Timestamp must be in the future");
         delegates[generateListLocationHash(_namespace, _list)][_delegate] = _untilTimestamp;
+        emit HintListDelegateAdded(_namespace, _list, _delegate);
     }
 
     function version() public view returns (string memory) {
@@ -209,5 +210,11 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
         bytes32 indexed list,
         bytes32 indexed key,
         bytes32 value
+    );
+
+    event HintListDelegateAdded(
+        address indexed namespace,
+        bytes32 indexed list,
+        address indexed newDelegate
     );
 }

@@ -23,6 +23,12 @@ contract BaseTest is Test {
         bytes32 value
     );
 
+    event HintListDelegateAdded(
+        address indexed namespace,
+        bytes32 indexed list,
+        address indexed newDelegate
+    );
+
     function setUp() public {
         // Owner of this contract is address(0)!
         vm.startPrank(address(0));
@@ -280,6 +286,9 @@ contract BaseTest is Test {
         bytes32 key = keccak256("key");
         bytes32 value = keccak256("value");
         uint256 untilTimestamp = block.timestamp + 100;
+
+        vm.expectEmit(true, true, true, true, address(registry));
+        emit HintListDelegateAdded(namespace, list, peterAddress);
 
         registry.addListDelegate(namespace, list, peterAddress, untilTimestamp);
         assertEq(registry.delegates(keccak256(abi.encodePacked(namespace, list)), peterAddress), untilTimestamp);
