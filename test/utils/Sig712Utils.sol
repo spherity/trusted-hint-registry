@@ -44,9 +44,9 @@ contract Sig712Utils {
     */
     function getTypeHash(MetaAction _action) internal pure returns (bytes32) {
         if (_action == MetaAction.SET_HINT) {
-            return keccak256("SetHintSigned(address namespace,bytes32 list,bytes32 key,bytes32 value,address signer,uint nonce)");
+            return keccak256("SetHintSigned(address namespace,bytes32 list,bytes32 key,bytes32 value,address signer,uint256 nonce)");
         } else if (_action == MetaAction.SET_HINTS) {
-            return keccak256("SetHintsSigned(address namespace,bytes32 list,bytes32[] keys,bytes32[] values,address signer,uint nonce)");
+            return keccak256("SetHintsSigned(address namespace,bytes32 list,bytes32[] keys,bytes32[] values,address signer,uint256 nonce)");
         }
         revert("Invalid action");
     }

@@ -10,9 +10,9 @@ import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils
 
 contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgradeable, OwnableUpgradeable, UUPSUpgradeable {
     mapping(address => mapping(bytes32 => mapping(bytes32 => bytes32))) hints;
-    mapping(bytes32 => mapping(address => uint)) delegates;
+    mapping(bytes32 => mapping(address => uint256)) delegates;
     mapping(bytes32 => address) public newOwners;
-    mapping(address => uint) public nonces;
+    mapping(address => uint256) public nonces;
     mapping(bytes32 => bool) public revokedLists;
 
     string public VERSION_MAJOR;
@@ -78,7 +78,7 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
     */
     function setHintSigned(address _namespace, bytes32 _list, bytes32 _key, bytes32 _value, address _signer, bytes calldata _signature) public whenNotPaused {
         bytes32 hash = _hashTypedDataV4(keccak256(abi.encode(
-            keccak256("SetHintSigned(address namespace,bytes32 list,bytes32 key,bytes32 value,address signer,uint nonce)"),
+            keccak256("SetHintSigned(address namespace,bytes32 list,bytes32 key,bytes32 value,address signer,uint256 nonce)"),
             _namespace,
             _list,
             _key,
@@ -129,7 +129,7 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
     */
     function setHintsSigned(address _namespace, bytes32 _list, bytes32[] calldata _keys, bytes32[] calldata _values, address _signer, bytes calldata _signature) public {
         bytes32 hash = _hashTypedDataV4(keccak256(abi.encode(
-            keccak256("SetHintsSigned(address namespace,bytes32 list,bytes32[] keys,bytes32[] values,address signer,uint nonce)"),
+            keccak256("SetHintsSigned(address namespace,bytes32 list,bytes32[] keys,bytes32[] values,address signer,uint256 nonce)"),
             _namespace,
             _list,
             keccak256(abi.encodePacked(_keys)),
