@@ -75,6 +75,22 @@ contract BaseTest is Test {
         registry.setHint(namespace, list, key, value);
     }
 
+    function test_RevertSetHintIfContractPaused() public {
+        vm.prank(address(0));
+        registry.pause();
+
+        vm.prank(address(1));
+        address namespace = address(1);
+        bytes32 list = keccak256("list");
+        bytes32 key = keccak256("key");
+        bytes32 value = keccak256("value");
+
+        vm.expectRevert("Pausable: paused");
+        registry.setHint(namespace, list, key, value);
+
+        assertEq(registry.getHint(namespace, list, key), bytes32(0));
+    }
+
     function test_SetHintSigned() public {
         vm.prank(address(999999));
         address namespace = peterAddress;
@@ -141,6 +157,32 @@ contract BaseTest is Test {
         registry.setHintSigned(namespace, list, key, value, marieAddress, signature);
 
         assertEq(registry.getHint(namespace, list, key), 0);
+        assertEq(registry.nonces(peterAddress), 0);
+    }
+
+    function test_RevertSetHintSignedIfContractPaused() public {
+        vm.prank(address(0));
+        registry.pause();
+        console.log(registry.paused());
+
+        vm.prank(address(999999));
+        address namespace = peterAddress;
+        bytes32 list = keccak256("list");
+        bytes32 key = keccak256("key");
+        bytes32 value = keccak256("value");
+
+        bytes32 digest = sig712.getSetHintTypedDataHash(
+            Sig712Utils.HintEntry(namespace, list, key, value),
+            peterAddress,
+            registry.nonces(peterAddress)
+        );
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(peterPrivateKey, digest);
+        bytes memory signature = abi.encodePacked(r, s, v);
+
+        vm.expectRevert("Pausable: paused");
+        registry.setHintSigned(namespace, list, key, value, peterAddress, signature);
+
+        assertEq(registry.getHint(namespace, list, key), bytes32(0));
         assertEq(registry.nonces(peterAddress), 0);
     }
 
