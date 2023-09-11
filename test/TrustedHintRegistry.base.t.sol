@@ -163,7 +163,6 @@ contract BaseTest is Test {
     function test_RevertSetHintSignedIfContractPaused() public {
         vm.prank(address(0));
         registry.pause();
-        console.log(registry.paused());
 
         vm.prank(address(999999));
         address namespace = peterAddress;
@@ -355,7 +354,7 @@ contract BaseTest is Test {
         registry.setHintDelegated(namespace, list, key, value);
     }
 
-    function test_RevertSetHintDelegateIfContractPaused() public {
+    function test_RevertSetHintDelegatedIfContractPaused() public {
         vm.prank(address(1));
         address namespace = address(1);
         bytes32 list = keccak256("list");
@@ -372,5 +371,51 @@ contract BaseTest is Test {
         vm.prank(peterAddress);
         vm.expectRevert("Pausable: paused");
         registry.setHintDelegated(namespace, list, key, value);
+    }
+
+    function test_AddListDelegate() public {
+        vm.prank(address(1));
+        address namespace = address(1);
+        bytes32 list = keccak256("list");
+        uint256 untilTimestamp = block.timestamp + 100;
+
+        vm.expectEmit(true, true, true, true, address(registry));
+        emit HintListDelegateAdded(namespace, list, peterAddress);
+
+        registry.addListDelegate(namespace, list, peterAddress, untilTimestamp);
+        assertEq(registry.delegates(keccak256(abi.encodePacked(namespace, list)), peterAddress), untilTimestamp);
+    }
+
+    function test_RevertAddListDelegateIfCallerNotOwner() public {
+        vm.prank(address(999999));
+        address namespace = address(1);
+        bytes32 list = keccak256("list");
+        uint256 untilTimestamp = block.timestamp + 100;
+
+        vm.expectRevert("Caller is not an owner");
+        registry.addListDelegate(namespace, list, peterAddress, untilTimestamp);
+    }
+
+    function test_RevertAddListDelegateIfTimestampNotInFuture() public {
+        vm.prank(address(1));
+        address namespace = address(1);
+        bytes32 list = keccak256("list");
+        uint256 untilTimestamp = 0;
+
+        vm.expectRevert("Timestamp must be in the future");
+        registry.addListDelegate(namespace, list, peterAddress, untilTimestamp);
+    }
+
+    function test_RevertAddListDelegateIfContractPaused() public {
+        vm.prank(address(0));
+        registry.pause();
+
+        vm.prank(address(1));
+        address namespace = address(1);
+        bytes32 list = keccak256("list");
+        uint256 untilTimestamp = block.timestamp + 100;
+
+        vm.expectRevert("Pausable: paused");
+        registry.addListDelegate(namespace, list, peterAddress, untilTimestamp);
     }
 }
