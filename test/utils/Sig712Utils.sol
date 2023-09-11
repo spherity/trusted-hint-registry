@@ -23,7 +23,9 @@ contract Sig712Utils {
 
     enum MetaAction {
         SET_HINT,
-        SET_HINTS
+        SET_HINTS,
+        SET_HINT_DELEGATED,
+        SET_HINTS_DELEGATED
     }
 
     constructor(string memory _contractVersion, address _contractAddress) {
@@ -47,6 +49,10 @@ contract Sig712Utils {
             return keccak256("SetHintSigned(address namespace,bytes32 list,bytes32 key,bytes32 value,address signer,uint256 nonce)");
         } else if (_action == MetaAction.SET_HINTS) {
             return keccak256("SetHintsSigned(address namespace,bytes32 list,bytes32[] keys,bytes32[] values,address signer,uint256 nonce)");
+        } else if (_action == MetaAction.SET_HINT_DELEGATED) {
+            return keccak256("SetHintDelegatedSigned(address namespace,bytes32 list,bytes32 key,bytes32 value,address signer,uint256 nonce)");
+        } else if (_action == MetaAction.SET_HINTS_DELEGATED) {
+            return keccak256("SetHintsDelegatedSigned(address namespace,bytes32 list,bytes32[] keys,bytes32[] values,address signer,uint256 nonce)");
         }
         revert("Invalid action");
     }
@@ -126,6 +132,84 @@ contract Sig712Utils {
                 "\x19\x01",
                 DOMAIN_SEPARATOR,
                 getSetHintsStructHash(_hints, _signer, _nonce)
+            )
+        );
+    }
+
+    ///////////////  SET HINT DELEGATED  ///////////////
+
+    /*
+    * @dev Get the struct hash for SetHintDelegated action
+    * @param _hint HintEntry
+    * @param _signer Address of signature creator
+    * @param _nonce Nonce of signature creator
+    * @return Hash of the SetHintDelegated action
+    */
+    function getSetHintDelegatedStructHash(HintEntry calldata _hint, address _signer, uint _nonce) internal pure returns (bytes32) {
+        return keccak256(abi.encode(
+            getTypeHash(MetaAction.SET_HINT_DELEGATED),
+            _hint.namespace,
+            _hint.list,
+            _hint.key,
+            _hint.value,
+            _signer,
+            _nonce
+        ));
+    }
+
+    /*
+    * @dev Get the typed data hash of a SetHintDelegated action
+    * @param _hint HintEntry
+    * @param _signer Address of signature creator
+    * @param _nonce Nonce of signature creator
+    * @return Hash of the SetHintDelegated action
+    */
+    function getSetHintDelegatedTypedDataHash(HintEntry calldata _hint, address _signer, uint _nonce) public view returns (bytes32) {
+        return
+            keccak256(
+            abi.encodePacked(
+                "\x19\x01",
+                DOMAIN_SEPARATOR,
+                getSetHintDelegatedStructHash(_hint, _signer, _nonce)
+            )
+        );
+    }
+
+    ///////////////  SET HINTS DELEGATED  ///////////////
+
+    /*
+    * @dev Get the struct hash for SetHintsDelegated action
+    * @param _hints HintsEntry
+    * @param _signer Address of signature creator
+    * @param _nonce Nonce of signature creator
+    * @return Hash of the SetHintsDelegated action
+    */
+    function getSetHintsDelegatedStructHash(HintsEntry calldata _hints, address _signer, uint _nonce) internal pure returns (bytes32) {
+        return keccak256(abi.encode(
+            getTypeHash(MetaAction.SET_HINTS_DELEGATED),
+            _hints.namespace,
+            _hints.list,
+            keccak256(abi.encodePacked(_hints.keys)),
+            keccak256(abi.encodePacked(_hints.values)),
+            _signer,
+            _nonce
+        ));
+    }
+
+    /*
+    * @dev Get the typed data hash of a SetHint action
+    * @param _hints HintsEntry
+    * @param _signer Address of signature creator
+    * @param _nonce Nonce of signature creator
+    * @return Hash of the SetHints action
+    */
+    function getSetHintsDelegatedTypedDataHash(HintsEntry calldata _hints, address _signer, uint _nonce) public view returns (bytes32) {
+        return
+            keccak256(
+            abi.encodePacked(
+                "\x19\x01",
+                DOMAIN_SEPARATOR,
+                getSetHintsDelegatedStructHash(_hints, _signer, _nonce)
             )
         );
     }

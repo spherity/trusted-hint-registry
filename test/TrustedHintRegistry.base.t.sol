@@ -5,7 +5,7 @@ import { console, Test } from "forge-std/Test.sol";
 import { TrustedHintRegistry } from "../src/TrustedHintRegistry.sol";
 import { Sig712Utils } from "./utils/Sig712Utils.sol";
 import { Events } from "./utils/Events.sol";
-// TODO: Write tests for the paused case!
+
 /*
 * @notice Test base functionality of TrustedHintRegistry
 */

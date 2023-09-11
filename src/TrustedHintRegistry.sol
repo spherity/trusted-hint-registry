@@ -145,21 +145,99 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
 
     ///////////////  DELEGATED MANAGEMENT  ///////////////
 
+    /**
+      * @notice Change a hint value as a delegate
+      * @param _namespace Address namespace
+      * @param _list Bytes32 list identifier
+      * @param _key Bytes32 key identifier for hint value
+      * @param _value New bytes32 hint value
+    */
     function setHintDelegated(address _namespace, bytes32 _list, bytes32 _key, bytes32 _value) public isDelegate(_namespace, _list) whenNotPaused {
         _setHint(_namespace, _list, _key, _value);
     }
 
+    /**
+      * @notice Change a hint value with a raw signature from a delegate
+      * @param _namespace Address namespace
+      * @param _list Bytes32 list identifier
+      * @param _key Bytes32 key identifier for hint value
+      * @param _value New bytes32 hint value
+      * @param _signer Address of signature creator
+      * @param _signature Raw signature create according to EIP-712
+    */
+    function setHintDelegatedSigned(address _namespace, bytes32 _list, bytes32 _key, bytes32 _value, address _signer, bytes calldata _signature) public whenNotPaused {
+        bytes32 hash = _hashTypedDataV4(keccak256(abi.encode(
+            keccak256("SetHintDelegatedSigned(address namespace,bytes32 list,bytes32 key,bytes32 value,address signer,uint256 nonce)"),
+            _namespace,
+            _list,
+            _key,
+            _value,
+            _signer,
+            nonces[_signer]
+        )));
+        address recoveredSigner = ECDSAUpgradeable.recover(hash, _signature);
+        require(identityIsDelegate(_namespace, _list, recoveredSigner), "Signer is not a delegate");
+        nonces[recoveredSigner]++;
+        _setHint(_namespace, _list, _key, _value);
+    }
+
+    /**
+      * @dev Change multiple hint values inside a hint list as a delegate
+      * @param _namespace Address namespace
+      * @param _list Bytes32 list identifier
+      * @param _keys List of bytes32 key identifiers
+      * @param _values List of new bytes32 hint values
+    */
+    function setHintsDelegated(address _namespace, bytes32 _list, bytes32[] calldata _keys, bytes32[] calldata _values) public isDelegate(_namespace, _list) whenNotPaused {
+        _setHints(_namespace, _list, _keys, _values);
+    }
+
+    /**
+      * @notice Change multiple hint values inside a hint list with a raw signature from a delegate
+      * @param _namespace Address namespace
+      * @param _list Bytes32 list identifier
+      * @param _keys List of bytes32 key identifiers
+      * @param _values List of new bytes32 hint values
+      * @param _signer Address of signature creator
+      * @param _signature Raw signature create according to EIP-712
+    */
+    function setHintsDelegatedSigned(address _namespace, bytes32 _list, bytes32[] calldata _keys, bytes32[] calldata _values, address _signer, bytes calldata _signature) public whenNotPaused {
+        bytes32 hash = _hashTypedDataV4(keccak256(abi.encode(
+            keccak256("SetHintsDelegatedSigned(address namespace,bytes32 list,bytes32[] keys,bytes32[] values,address signer,uint256 nonce)"),
+            _namespace,
+            _list,
+            keccak256(abi.encodePacked(_keys)),
+            keccak256(abi.encodePacked(_values)),
+            _signer,
+            nonces[_signer]
+        )));
+        address recoveredSigner = ECDSAUpgradeable.recover(hash, _signature);
+        require(identityIsDelegate(_namespace, _list, recoveredSigner), "Signer is not a delegate");
+        nonces[recoveredSigner]++;
+        _setHints(_namespace, _list, _keys, _values);
+    }
+
+    ///////////////  LIST MANAGEMENT  ///////////////
+
+    /**
+      * @notice Add a delegate to a hint list
+      * @param _namespace Address namespace
+      * @param _list Bytes32 list identifier
+      * @param _delegate Address of new delegate
+      * @param _untilTimestamp Timestamp until which the delegate is valid
+    */
     function addListDelegate(address _namespace, bytes32 _list, address _delegate, uint256 _untilTimestamp) public isOwner(_namespace, _list) whenNotPaused {
         require(_untilTimestamp > block.timestamp, "Timestamp must be in the future");
         delegates[generateListLocationHash(_namespace, _list)][_delegate] = _untilTimestamp;
         emit HintListDelegateAdded(_namespace, _list, _delegate);
     }
 
+
+    ///////////////  MISC  ///////////////
+
     function version() public view returns (string memory) {
         return string.concat(VERSION_MAJOR, VERSION_DELIMITER, VERSION_MINOR, VERSION_DELIMITER, VERSION_PATCH);
     }
-
-    // Misc
 
     function generateListLocationHash(address _namespace, bytes32 _list) pure internal returns (bytes32) {
         return keccak256(abi.encodePacked(_namespace, _list));
@@ -203,7 +281,7 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
 
     function _authorizeUpgrade(address newImplementation) internal onlyOwner override {}
 
-    // Events
+    ////////////////////////  EVENTS  ////////////////////////
 
     event HintValueChanged(
         address indexed namespace,
