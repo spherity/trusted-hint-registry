@@ -12,4 +12,16 @@ contract Events {
         bytes32 indexed list,
         address indexed newDelegate
     );
+
+    event HintListStatusChanged(
+        address indexed namespace,
+        bytes32 indexed list,
+        bool indexed revoked
+    );
+
+    event HintListOwnerChanged(
+        address indexed namespace,
+        bytes32 indexed list,
+        address indexed newOwner
+    );
 }

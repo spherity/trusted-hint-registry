@@ -21,11 +21,18 @@ contract Sig712Utils {
         bytes32[] values;
     }
 
+    struct ListOwnerEntry {
+        address namespace;
+        bytes32 list;
+        bool revoked;
+    }
+
     enum MetaAction {
         SET_HINT,
         SET_HINTS,
         SET_HINT_DELEGATED,
-        SET_HINTS_DELEGATED
+        SET_HINTS_DELEGATED,
+        SET_LIST_STATUS
     }
 
     constructor(string memory _contractVersion, address _contractAddress) {
@@ -53,6 +60,8 @@ contract Sig712Utils {
             return keccak256("SetHintDelegatedSigned(address namespace,bytes32 list,bytes32 key,bytes32 value,address signer,uint256 nonce)");
         } else if (_action == MetaAction.SET_HINTS_DELEGATED) {
             return keccak256("SetHintsDelegatedSigned(address namespace,bytes32 list,bytes32[] keys,bytes32[] values,address signer,uint256 nonce)");
+        } else if (_action == MetaAction.SET_LIST_STATUS) {
+            return keccak256("SetListStatusSigned(address namespace,bytes32 list,bool revoked,address signer,uint256 nonce)");
         }
         revert("Invalid action");
     }
@@ -210,6 +219,44 @@ contract Sig712Utils {
                 "\x19\x01",
                 DOMAIN_SEPARATOR,
                 getSetHintsDelegatedStructHash(_hints, _signer, _nonce)
+            )
+        );
+    }
+
+    ///////////////  SET LIST STATUS  ///////////////
+
+    /*
+    * @dev Get the struct hash for SetListStatus action
+    * @param _listOwnerEntry ListOwnerEntry
+    * @param _signer Address of signature creator
+    * @param _nonce Nonce of signature creator
+    * @return Hash of the SetListStatus action
+    */
+    function getSetListStatusStructHash(ListOwnerEntry calldata _listOwnerEntry, address _signer, uint _nonce) internal pure returns (bytes32) {
+        return keccak256(abi.encode(
+            getTypeHash(MetaAction.SET_LIST_STATUS),
+            _listOwnerEntry.namespace,
+            _listOwnerEntry.list,
+            _listOwnerEntry.revoked,
+            _signer,
+            _nonce
+        ));
+    }
+
+    /*
+    * @dev Get the typed data hash of a SetListStatus action
+    * @param _listOwnerEntry ListOwnerEntry
+    * @param _signer Address of signature creator
+    * @param _nonce Nonce of signature creator
+    * @return Hash of the SetListStatus action
+    */
+    function getSetListStatusTypedDataHash(ListOwnerEntry calldata _listOwnerEntry, address _signer, uint _nonce) public view returns (bytes32) {
+        return
+            keccak256(
+            abi.encodePacked(
+                "\x19\x01",
+                DOMAIN_SEPARATOR,
+                getSetListStatusStructHash(_listOwnerEntry, _signer, _nonce)
             )
         );
     }
