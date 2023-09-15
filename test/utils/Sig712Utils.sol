@@ -21,10 +21,16 @@ contract Sig712Utils {
         bytes32[] values;
     }
 
-    struct ListOwnerEntry {
+    struct ListStatusEntry {
         address namespace;
         bytes32 list;
         bool revoked;
+    }
+
+    struct ListOwnerEntry {
+        address namespace;
+        bytes32 list;
+        address newOwner;
     }
 
     enum MetaAction {
@@ -32,7 +38,8 @@ contract Sig712Utils {
         SET_HINTS,
         SET_HINT_DELEGATED,
         SET_HINTS_DELEGATED,
-        SET_LIST_STATUS
+        SET_LIST_STATUS,
+        SET_LIST_OWNER
     }
 
     constructor(string memory _contractVersion, address _contractAddress) {
@@ -62,6 +69,8 @@ contract Sig712Utils {
             return keccak256("SetHintsDelegatedSigned(address namespace,bytes32 list,bytes32[] keys,bytes32[] values,address signer,uint256 nonce)");
         } else if (_action == MetaAction.SET_LIST_STATUS) {
             return keccak256("SetListStatusSigned(address namespace,bytes32 list,bool revoked,address signer,uint256 nonce)");
+        } else if (_action == MetaAction.SET_LIST_OWNER) {
+            return keccak256("SetListOwnerSigned(address namespace,bytes32 list,address newOwner,address signer,uint256 nonce)");
         }
         revert("Invalid action");
     }
@@ -227,17 +236,17 @@ contract Sig712Utils {
 
     /*
     * @dev Get the struct hash for SetListStatus action
-    * @param _listOwnerEntry ListOwnerEntry
+    * @param _listStatusEntry ListStatusEntry
     * @param _signer Address of signature creator
     * @param _nonce Nonce of signature creator
     * @return Hash of the SetListStatus action
     */
-    function getSetListStatusStructHash(ListOwnerEntry calldata _listOwnerEntry, address _signer, uint _nonce) internal pure returns (bytes32) {
+    function getSetListStatusStructHash(ListStatusEntry calldata _listStatusEntry, address _signer, uint _nonce) internal pure returns (bytes32) {
         return keccak256(abi.encode(
             getTypeHash(MetaAction.SET_LIST_STATUS),
-            _listOwnerEntry.namespace,
-            _listOwnerEntry.list,
-            _listOwnerEntry.revoked,
+            _listStatusEntry.namespace,
+            _listStatusEntry.list,
+            _listStatusEntry.revoked,
             _signer,
             _nonce
         ));
@@ -245,19 +254,59 @@ contract Sig712Utils {
 
     /*
     * @dev Get the typed data hash of a SetListStatus action
-    * @param _listOwnerEntry ListOwnerEntry
+    * @param _listStatusEntry ListStatusEntry
     * @param _signer Address of signature creator
     * @param _nonce Nonce of signature creator
     * @return Hash of the SetListStatus action
     */
-    function getSetListStatusTypedDataHash(ListOwnerEntry calldata _listOwnerEntry, address _signer, uint _nonce) public view returns (bytes32) {
+    function getSetListStatusTypedDataHash(ListStatusEntry calldata _listStatusEntry, address _signer, uint _nonce) public view returns (bytes32) {
         return
             keccak256(
             abi.encodePacked(
                 "\x19\x01",
                 DOMAIN_SEPARATOR,
-                getSetListStatusStructHash(_listOwnerEntry, _signer, _nonce)
+                getSetListStatusStructHash(_listStatusEntry, _signer, _nonce)
             )
         );
     }
+
+    ///////////////  SET LIST OWNER  ///////////////
+
+
+    /*
+    * @dev Get the struct hash for SetListOwner action
+    * @param _listOwnerEntry ListOwnerEntry
+    * @param _signer Address of signature creator
+    * @param _nonce Nonce of signature creator
+    * @return Hash of the SetListOwner action
+    */
+    function getSetListOwnerStructHash(ListOwnerEntry calldata _listOwnerEntry, address _signer, uint _nonce) internal pure returns (bytes32) {
+        return keccak256(abi.encode(
+            getTypeHash(MetaAction.SET_LIST_OWNER),
+            _listOwnerEntry.namespace,
+            _listOwnerEntry.list,
+            _listOwnerEntry.newOwner,
+            _signer,
+            _nonce
+        ));
+    }
+
+    /*
+    * @dev Get the typed data hash of a SetListOwner action
+    * @param _listOwnerEntry ListOwnerEntry
+    * @param _signer Address of signature creator
+    * @param _nonce Nonce of signature creator
+    * @return Hash of the SetListOwner action
+    */
+    function getSetListOwnerTypedDataHash(ListOwnerEntry calldata _listOwnerEntry, address _signer, uint _nonce) public view returns (bytes32) {
+        return
+            keccak256(
+            abi.encodePacked(
+                "\x19\x01",
+                DOMAIN_SEPARATOR,
+                getSetListOwnerStructHash(_listOwnerEntry, _signer, _nonce)
+            )
+        );
+    }
+
 }

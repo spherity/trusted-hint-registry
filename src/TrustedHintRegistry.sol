@@ -364,6 +364,7 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
     */
     function _removeListDelegate(address _namespace, bytes32 _list, address _delegate) internal {
         delegates[generateListLocationHash(_namespace, _list)][_delegate] = 0;
+        emit HintListDelegateRemoved(_namespace, _list, _delegate);
     }
 
     /**
@@ -460,6 +461,12 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
         address indexed namespace,
         bytes32 indexed list,
         address indexed newDelegate
+    );
+
+    event HintListDelegateRemoved(
+        address indexed namespace,
+        bytes32 indexed list,
+        address indexed oldDelegate
     );
 
     event HintListStatusChanged(

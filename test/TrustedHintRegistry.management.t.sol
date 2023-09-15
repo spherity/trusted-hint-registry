@@ -70,7 +70,7 @@ contract ManagementTest is Test, Events {
         bool revoked = true;
 
         bytes32 digest = sig712.getSetListStatusTypedDataHash(
-            Sig712Utils.ListOwnerEntry(namespace, list, revoked),
+            Sig712Utils.ListStatusEntry(namespace, list, revoked),
             peterAddress,
             registry.nonces(peterAddress)
         );
@@ -102,7 +102,7 @@ contract ManagementTest is Test, Events {
         bool revoked = true;
 
         bytes32 digest = sig712.getSetListStatusTypedDataHash(
-            Sig712Utils.ListOwnerEntry(namespace, list, revoked),
+            Sig712Utils.ListStatusEntry(namespace, list, revoked),
             peterAddress,
             registry.nonces(peterAddress)
         );
@@ -127,7 +127,7 @@ contract ManagementTest is Test, Events {
         bool revoked = true;
 
         bytes32 digest = sig712.getSetListStatusTypedDataHash(
-            Sig712Utils.ListOwnerEntry(namespace, list, revoked),
+            Sig712Utils.ListStatusEntry(namespace, list, revoked),
             peterAddress,
             registry.nonces(peterAddress) + 1
         );
@@ -152,7 +152,7 @@ contract ManagementTest is Test, Events {
         bool revoked = true;
 
         bytes32 digest = sig712.getSetListStatusTypedDataHash(
-            Sig712Utils.ListOwnerEntry(namespace, list, revoked),
+            Sig712Utils.ListStatusEntry(namespace, list, revoked),
             peterAddress,
             registry.nonces(peterAddress)
         );
@@ -180,7 +180,9 @@ contract ManagementTest is Test, Events {
         emit HintListOwnerChanged(namespace, list, newOwner);
 
         registry.setListOwner(namespace, list, newOwner);
-        assertEq(registry.newOwners(keccak256(abi.encodePacked(namespace, list))), newOwner);
+        assertEq(registry.identityIsOwner(namespace, list, namespace), false);
+        assertEq(registry.identityIsOwner(namespace, list, newOwner), true);
+
 
         vm.prank(address(2));
         bytes32 key = keccak256("key");
@@ -199,7 +201,8 @@ contract ManagementTest is Test, Events {
         emit HintListOwnerChanged(namespace, list, newOwner);
 
         registry.setListOwner(namespace, list, newOwner);
-        assertEq(registry.newOwners(keccak256(abi.encodePacked(namespace, list))), newOwner);
+        assertEq(registry.identityIsOwner(namespace, list, namespace), false);
+        assertEq(registry.identityIsOwner(namespace, list, newOwner), true);
 
         vm.expectRevert("Caller is not an owner");
         registry.setHint(namespace, list, keccak256("key"), keccak256("value"));
@@ -226,6 +229,143 @@ contract ManagementTest is Test, Events {
 
         vm.expectRevert("Pausable: paused");
         registry.setListOwner(namespace, list, newOwner);
+    }
+
+    function test_SetListOwnerSigned() public {
+        vm.prank(peterAddress);
+        address namespace = peterAddress;
+        bytes32 list = keccak256("list");
+        address newOwner = address(2);
+
+        bytes32 digest = sig712.getSetListOwnerTypedDataHash(
+            Sig712Utils.ListOwnerEntry(namespace, list, newOwner),
+            peterAddress,
+            registry.nonces(peterAddress)
+        );
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(peterPrivateKey, digest);
+        bytes memory signature = abi.encodePacked(r, s, v);
+
+        vm.expectEmit(true, true, true, true, address(registry));
+        emit HintListOwnerChanged(namespace, list, newOwner);
+
+        vm.prank(marieAddress);
+        registry.setListOwnerSigned(
+            namespace,
+            list,
+            newOwner,
+            peterAddress,
+            signature
+        );
+        assertEq(registry.identityIsOwner(namespace, list, peterAddress), false);
+        assertEq(registry.identityIsOwner(namespace, list, newOwner), true);
+        assertEq(registry.nonces(peterAddress), 1);
+    }
+
+    function test_RevertSetListOwnerSignedIfSignerOldOwner() public {
+        vm.prank(peterAddress);
+        address namespace = peterAddress;
+        bytes32 list = keccak256("list");
+        address newOwner = address(2);
+
+        bytes32 digest = sig712.getSetListOwnerTypedDataHash(
+            Sig712Utils.ListOwnerEntry(namespace, list, newOwner),
+            peterAddress,
+            registry.nonces(peterAddress)
+        );
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(peterPrivateKey, digest);
+        bytes memory signature = abi.encodePacked(r, s, v);
+
+        vm.expectEmit(true, true, true, true, address(registry));
+        emit HintListOwnerChanged(namespace, list, newOwner);
+
+        vm.prank(marieAddress);
+        registry.setListOwnerSigned(
+            namespace,
+            list,
+            newOwner,
+            peterAddress,
+            signature
+        );
+        assertEq(registry.identityIsOwner(namespace, list, peterAddress), false);
+        assertEq(registry.identityIsOwner(namespace, list, newOwner), true);
+        assertEq(registry.nonces(peterAddress), 1);
+
+        bytes32 digestNew = sig712.getSetListOwnerTypedDataHash(
+            Sig712Utils.ListOwnerEntry(namespace, list, namespace),
+            peterAddress,
+            registry.nonces(peterAddress)
+        );
+
+        (uint8 vNew, bytes32 rNew, bytes32 sNew) = vm.sign(peterPrivateKey, digestNew);
+        bytes memory signatureNew = abi.encodePacked(rNew, sNew, vNew);
+
+        vm.expectRevert("Signer is not an owner");
+        registry.setListOwnerSigned(
+            namespace,
+            list,
+            peterAddress,
+            peterAddress,
+            signatureNew
+        );
+    }
+
+    function test_RevertSetListOwnerSignedIfContractPaused() public {
+        vm.prank(address(0));
+        registry.pause();
+
+        vm.prank(peterAddress);
+        address namespace = peterAddress;
+        bytes32 list = keccak256("list");
+        address newOwner = address(2);
+
+        bytes32 digest = sig712.getSetListOwnerTypedDataHash(
+            Sig712Utils.ListOwnerEntry(namespace, list, newOwner),
+            peterAddress,
+            registry.nonces(peterAddress)
+        );
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(peterPrivateKey, digest);
+        bytes memory signature = abi.encodePacked(r, s, v);
+
+        vm.expectRevert("Pausable: paused");
+        registry.setListOwnerSigned(
+            namespace,
+            list,
+            newOwner,
+            peterAddress,
+            signature
+        );
+
+        assertEq(registry.nonces(peterAddress), 0);
+    }
+
+    function test_RevertSetListOwnerSignedIfNonceInvalid() public {
+        vm.prank(peterAddress);
+        address namespace = peterAddress;
+        bytes32 list = keccak256("list");
+        address newOwner = address(2);
+
+        bytes32 digest = sig712.getSetListOwnerTypedDataHash(
+            Sig712Utils.ListOwnerEntry(namespace, list, newOwner),
+            peterAddress,
+            registry.nonces(peterAddress) + 1
+        );
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(peterPrivateKey, digest);
+        bytes memory signature = abi.encodePacked(r, s, v);
+
+        vm.expectRevert("Signer is not an owner");
+        registry.setListOwnerSigned(
+            namespace,
+            list,
+            newOwner,
+            peterAddress,
+            signature
+        );
+
+        assertEq(registry.nonces(peterAddress), 0);
     }
 
     function test_AddListDelegate() public {
@@ -272,5 +412,43 @@ contract ManagementTest is Test, Events {
 
         vm.expectRevert("Pausable: paused");
         registry.addListDelegate(namespace, list, peterAddress, untilTimestamp);
+    }
+
+    function test_RemoveListDelegate() public {
+        vm.prank(address(1));
+        address namespace = address(1);
+        bytes32 list = keccak256("list");
+        uint256 untilTimestamp = block.timestamp + 100;
+
+        registry.addListDelegate(namespace, list, peterAddress, untilTimestamp);
+        assertEq(registry.identityIsDelegate(namespace, list, peterAddress), true);
+
+        vm.expectEmit(true, true, true, true, address(registry));
+        emit HintListDelegateRemoved(namespace, list, peterAddress);
+
+        vm.prank(address(1));
+        registry.removeListDelegate(namespace, list, peterAddress);
+        assertEq(registry.identityIsDelegate(namespace, list, peterAddress), false);
+    }
+
+    function test_RevertRemoveListDelegateIfCallerNotOwner() public {
+        vm.prank(address(999999));
+        address namespace = address(1);
+        bytes32 list = keccak256("list");
+
+        vm.expectRevert("Caller is not an owner");
+        registry.removeListDelegate(namespace, list, peterAddress);
+    }
+
+    function test_RevertRemoveListDelegateIfContractPaused() public {
+        vm.prank(address(0));
+        registry.pause();
+
+        vm.prank(address(1));
+        address namespace = address(1);
+        bytes32 list = keccak256("list");
+
+        vm.expectRevert("Pausable: paused");
+        registry.removeListDelegate(namespace, list, peterAddress);
     }
 }

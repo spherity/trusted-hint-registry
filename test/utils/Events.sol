@@ -13,6 +13,12 @@ contract Events {
         address indexed newDelegate
     );
 
+    event HintListDelegateRemoved(
+        address indexed namespace,
+        bytes32 indexed list,
+        address indexed oldDelegate
+    );
+
     event HintListStatusChanged(
         address indexed namespace,
         bytes32 indexed list,
