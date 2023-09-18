@@ -33,13 +33,28 @@ contract Sig712Utils {
         address newOwner;
     }
 
+    struct AddListDelegateEntry {
+        address namespace;
+        bytes32 list;
+        address delegate;
+        uint untilTimestamp;
+    }
+
+    struct RemoveListDelegateEntry {
+        address namespace;
+        bytes32 list;
+        address delegate;
+    }
+
     enum MetaAction {
         SET_HINT,
         SET_HINTS,
         SET_HINT_DELEGATED,
         SET_HINTS_DELEGATED,
         SET_LIST_STATUS,
-        SET_LIST_OWNER
+        SET_LIST_OWNER,
+        ADD_LIST_DELEGATE,
+        REMOVE_LIST_DELEGATE
     }
 
     constructor(string memory _contractVersion, address _contractAddress) {
@@ -71,6 +86,10 @@ contract Sig712Utils {
             return keccak256("SetListStatusSigned(address namespace,bytes32 list,bool revoked,address signer,uint256 nonce)");
         } else if (_action == MetaAction.SET_LIST_OWNER) {
             return keccak256("SetListOwnerSigned(address namespace,bytes32 list,address newOwner,address signer,uint256 nonce)");
+        } else if (_action == MetaAction.ADD_LIST_DELEGATE) {
+            return keccak256("AddListDelegateSigned(address namespace,bytes32 list,address delegate,uint256 untilTimestamp,address signer,uint256 nonce)");
+        } else if (_action == MetaAction.REMOVE_LIST_DELEGATE) {
+            return keccak256("RemoveListDelegateSigned(address namespace,bytes32 list,address delegate,address signer,uint256 nonce)");
         }
         revert("Invalid action");
     }
@@ -272,7 +291,6 @@ contract Sig712Utils {
 
     ///////////////  SET LIST OWNER  ///////////////
 
-
     /*
     * @dev Get the struct hash for SetListOwner action
     * @param _listOwnerEntry ListOwnerEntry
@@ -305,6 +323,83 @@ contract Sig712Utils {
                 "\x19\x01",
                 DOMAIN_SEPARATOR,
                 getSetListOwnerStructHash(_listOwnerEntry, _signer, _nonce)
+            )
+        );
+    }
+
+    ///////////////  ADD LIST DELEGATE  ///////////////
+
+    /*
+    * @dev Get the struct hash for AddListDelegate action
+    * @param _addDelegateEntry AddListDelegateEntry
+    * @param _signer Address of signature creator
+    * @param _nonce Nonce of signature creator
+    * @return Hash of the AddListDelegate action
+    */
+    function getAddListDelegateStructHash(AddListDelegateEntry calldata _addDelegateEntry, address _signer, uint _nonce) internal pure returns (bytes32) {
+        return keccak256(abi.encode(
+            getTypeHash(MetaAction.ADD_LIST_DELEGATE),
+            _addDelegateEntry.namespace,
+            _addDelegateEntry.list,
+            _addDelegateEntry.delegate,
+            _addDelegateEntry.untilTimestamp,
+            _signer,
+            _nonce
+        ));
+    }
+
+    /*
+    * @dev Get the typed data hash of a AddListDelegate action
+    * @param _addDelegateEntry AddListDelegateEntry
+    * @param _signer Address of signature creator
+    * @param _nonce Nonce of signature creator
+    * @return Hash of the AddListDelegate action
+    */
+    function getAddListDelegateTypedDataHash(AddListDelegateEntry calldata _addDelegateEntry, address _signer, uint _nonce) public view returns (bytes32) {
+        return
+            keccak256(
+            abi.encodePacked(
+                "\x19\x01",
+                DOMAIN_SEPARATOR,
+                getAddListDelegateStructHash(_addDelegateEntry, _signer, _nonce)
+            )
+        );
+    }
+
+    ///////////////  REMOVE LIST DELEGATE  ///////////////
+
+    /*
+    * @dev Get the struct hash for RemoveListDelegate action
+    * @param _removeDelegateEntry RemoveListDelegateEntry
+    * @param _signer Address of signature creator
+    * @param _nonce Nonce of signature creator
+    * @return Hash of the RemoveListDelegate action
+    */
+    function getRemoveListDelegateStructHash(RemoveListDelegateEntry calldata _removeDelegateEntry, address _signer, uint _nonce) internal pure returns (bytes32) {
+        return keccak256(abi.encode(
+            getTypeHash(MetaAction.REMOVE_LIST_DELEGATE),
+            _removeDelegateEntry.namespace,
+            _removeDelegateEntry.list,
+            _removeDelegateEntry.delegate,
+            _signer,
+            _nonce
+        ));
+    }
+
+    /*
+    * @dev Get the typed data hash of a RemoveListDelegate action
+    * @param _removeDelegateEntry RemoveListDelegateEntry
+    * @param _signer Address of signature creator
+    * @param _nonce Nonce of signature creator
+    * @return Hash of the RemoveListDelegate action
+    */
+    function getRemoveListDelegateTypedDataHash(RemoveListDelegateEntry calldata _removeDelegateEntry, address _signer, uint _nonce) public view returns (bytes32) {
+        return
+            keccak256(
+            abi.encodePacked(
+                "\x19\x01",
+                DOMAIN_SEPARATOR,
+                getRemoveListDelegateStructHash(_removeDelegateEntry, _signer, _nonce)
             )
         );
     }
