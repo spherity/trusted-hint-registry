@@ -9,12 +9,11 @@ contract ProxyTest is Test {
 
     function test_ShouldDeployImplementationAndProxy() public {
         TrustedHintRegistry implementation = new TrustedHintRegistry();
-        ERC1967Proxy proxy = new ERC1967Proxy(address(implementation), "");
+        bytes memory data = abi.encodeCall(TrustedHintRegistry.initialize, ());
+        ERC1967Proxy proxy = new ERC1967Proxy(address(implementation), data);
 
         // wrap in ABI to support easier calls
         TrustedHintRegistry wrappedProxy = TrustedHintRegistry(address(proxy));
-        // TODO: This can somehow be included during proxy deployment in the data field
-        wrappedProxy.initialize();
         (,string memory name, string memory version,, address verifyingContract,,) = wrappedProxy.eip712Domain();
 
         assertEq(wrappedProxy.version(), "1.0.0");
@@ -25,12 +24,11 @@ contract ProxyTest is Test {
 
     function test_ShouldUpgradeProxyImplementation() public {
         TrustedHintRegistry implementation = new TrustedHintRegistry();
-        ERC1967Proxy proxy = new ERC1967Proxy(address(implementation), "");
+        bytes memory data = abi.encodeCall(TrustedHintRegistry.initialize, ());
+        ERC1967Proxy proxy = new ERC1967Proxy(address(implementation), data);
 
         // wrap in ABI to support easier calls
         TrustedHintRegistry wrappedProxy = TrustedHintRegistry(address(proxy));
-        // TODO: This can somehow be included during proxy deployment in the data field
-        wrappedProxy.initialize();
         (,string memory name, string memory version,, address verifyingContract,,) = wrappedProxy.eip712Domain();
 
         assertEq(wrappedProxy.version(), "1.0.0");

@@ -21,7 +21,6 @@ contract TrustedHintRegistryVX is Initializable, EIP712Upgradeable, PausableUpgr
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
-        initialize();
         _disableInitializers();
     }
 
