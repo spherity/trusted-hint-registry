@@ -1,30 +1,30 @@
-/*
-// SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity ^0.8.12;
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity >=0.8.0 <0.9.0;
 
 import "forge-std/console.sol";
 import "forge-std/Script.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/ERC1967/ERC1967UpgradeUpgradeable.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import "../src/TrustedHintRegistry.sol";
-import "../src/TrustedIssuerRegistry2.sol";
 
 contract UpgradeLogic is Script {
-    address proxy = 0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512;
-    TrustedHintRegistry wrappedProxyV1 = TrustedHintRegistry(address(proxy));
-    TrustedIssuerRegistry2 wrappedProxyV2;
+    address proxy = vm.envAddress("ETH_PROXY_ADDRESS");
+    TrustedHintRegistry wrappedProxy = TrustedHintRegistry(address(proxy));
 
     function run() public {
         vm.startBroadcast();
-        TrustedIssuerRegistry2 implementationV2 = new TrustedIssuerRegistry2();
-        wrappedProxyV1.upgradeTo(address(implementationV2));
+        TrustedHintRegistry implementationNew = new TrustedHintRegistry();
+        wrappedProxy.upgradeTo(address(implementationNew));
 
-        wrappedProxyV2 = TrustedIssuerRegistry2(address(proxy));
-        wrappedProxyV2.setTrusted("test2", "test2", true);
+        // Wrap in ABI to support easier calls
+        TrustedHintRegistry wrappedProxyNew = TrustedHintRegistry(address(proxy));
+        wrappedProxyNew.updateVersion();
         vm.stopBroadcast();
 
-        console.log(msg.sender);
-        console.log("Contract Version: ", wrappedProxyV2.version());
-        console.log("New Logic: ", address(implementationV2));
+        console.log("Chain ID: ", block.chainid);
+        console.log("TX Sender: ", msg.sender);
+        console.log("New Logic Address: ", address(implementationNew));
+        console.log("Proxy Address: ", proxy);
+        console.log("Contract Version: ", wrappedProxyNew.version());
     }
-}*/
+}
