@@ -6,10 +6,10 @@ import { ERC1967Proxy } from  "@openzeppelin/contracts/proxy/ERC1967/ERC1967Prox
 import { TrustedHintRegistry } from "../src/TrustedHintRegistry.sol";
 
 contract UpgradeLogic is Script {
-    address proxy = vm.envAddress("ETH_PROXY_ADDRESS");
-    TrustedHintRegistry wrappedProxy = TrustedHintRegistry(address(proxy));
-
     function run() public {
+        address proxy = vm.envAddress("ETH_PROXY_ADDRESS");
+        TrustedHintRegistry wrappedProxy = TrustedHintRegistry(address(proxy));
+
         vm.startBroadcast();
         TrustedHintRegistry implementationNew = new TrustedHintRegistry();
         wrappedProxy.upgradeTo(address(implementationNew));
