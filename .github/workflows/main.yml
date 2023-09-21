@@ -31,6 +31,9 @@ jobs:
       - name: Run tests
         run: forge test -vvv
 
+      - name: Run coverage
+        run: forge coverage
+
   upgrade_sepolia_on_release_tag:
     name: Upgrade
     if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')

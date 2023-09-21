@@ -21,7 +21,10 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: foundry-rs/foundry-toolchain@v1
-      - run: |
+      - name: Build
+        run: forge build
+      - name: Upgrade
+        run: |
           forge script UpgradeLogic \ 
           --rpc-url ${{ secrets.RPC_URL }} \
           --private-key ${{ secrets.ETH_PRIVATE_KEY }} \
