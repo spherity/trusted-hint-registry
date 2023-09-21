@@ -1,0 +1,32 @@
+name: Upgrade Logic Sepolia
+
+# This workflow is only callable by other workflows
+on:
+  workflow_call:
+    secrets:
+      RPC_URL:
+        required: true
+      ETH_PRIVATE_KEY:
+        required: true
+      ETH_PROXY_ADDRESS:
+        required: true
+      ETHERSCAN_API_KEY:
+        required: true
+
+jobs:
+  deploy:
+    name: upgrade - sepolia
+    environment: sepolia
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: foundry-rs/foundry-toolchain@v1
+      - run: |
+          forge script UpgradeLogic \ 
+          --rpc-url ${{ secrets.RPC_URL }} \
+          --private-key ${{ secrets.ETH_PRIVATE_KEY }} \
+          --etherscan-api-key ${{ secrets.ETHERSCAN_API_KEY }} \
+          --verify --optimize --broadcast        
+
+        env:
+          ETH_PROXY_ADDRESS: ${{ secrets.ETH_PROXY_ADDRESS }}

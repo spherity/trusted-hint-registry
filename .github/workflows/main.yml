@@ -1,0 +1,42 @@
+name: Build & Test
+
+on:
+  push:
+    branches:
+      - main
+    # Also trigger this workflow when a new tag is created
+    tags:
+      - '*'
+  pull_request:
+
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Foundry project
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Run tests
+        run: forge test -vvv
+
+  upgrade_sepolia_on_release_tag:
+    if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
+    needs: [ test ]
+    uses: ./.github/workflows/upgrade_sepolia.yml
+    secrets:
+      RPC_URL: ${{ secrets.RPC_URL }}
+      ETH_PRIVATE_KEY: ${{ secrets.ETH_PRIVATE_KEY }}
+      ETH_PROXY_ADDRESS: ${{ secrets.ETH_PROXY_ADDRESS }}
+      ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
