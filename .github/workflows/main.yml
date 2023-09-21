@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   test:
-    name: Foundry project
+    name: Tests
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -32,6 +32,7 @@ jobs:
         run: forge test -vvv
 
   upgrade_sepolia_on_release_tag:
+    name: Upgrade
     if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
     needs: [ test ]
     uses: ./.github/workflows/upgrade_sepolia.yml
