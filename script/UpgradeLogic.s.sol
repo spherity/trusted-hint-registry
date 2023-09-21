@@ -1,11 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.8.0 <0.9.0;
 
-import "forge-std/console.sol";
-import "forge-std/Script.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/ERC1967/ERC1967UpgradeUpgradeable.sol";
-import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-import "../src/TrustedHintRegistry.sol";
+import { Script, console } from "forge-std/Script.sol";
+import { ERC1967Proxy } from  "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import { TrustedHintRegistry } from "../src/TrustedHintRegistry.sol";
 
 contract UpgradeLogic is Script {
     address proxy = vm.envAddress("ETH_PROXY_ADDRESS");
