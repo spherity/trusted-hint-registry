@@ -8,6 +8,7 @@ import { TrustedHintRegistry } from "../src/TrustedHintRegistry.sol";
 contract UpgradeLogic is Script {
     function run() public {
         address proxy = vm.envAddress("ETH_PROXY_ADDRESS");
+        console.log("Proxy Address: ", proxy);
         TrustedHintRegistry wrappedProxy = TrustedHintRegistry(address(proxy));
 
         vm.startBroadcast();

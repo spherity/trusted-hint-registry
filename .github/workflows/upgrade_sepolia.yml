@@ -24,12 +24,7 @@ jobs:
       - name: Build
         run: forge build
       - name: Upgrade
-        run: |
-          forge script UpgradeLogic \ 
-          --rpc-url ${{ secrets.RPC_URL }} \
-          --private-key ${{ secrets.ETH_PRIVATE_KEY }} \
-          --etherscan-api-key ${{ secrets.ETHERSCAN_API_KEY }} \
-          --verify --optimize --broadcast        
+        run: forge script UpgradeLogic --rpc-url ${{ secrets.RPC_URL }} --private-key ${{ secrets.ETH_PRIVATE_KEY }} --etherscan-api-key ${{ secrets.ETHERSCAN_API_KEY }} --verify --optimize --broadcast
 
         env:
           ETH_PROXY_ADDRESS: ${{ secrets.ETH_PROXY_ADDRESS }}
