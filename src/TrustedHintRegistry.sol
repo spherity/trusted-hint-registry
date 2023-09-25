@@ -32,16 +32,18 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
         __EIP712_init("TrustedHintRegistry", version());
     }
 
-    function updateVersion() reinitializer(2) public {
-        VERSION_MAJOR = "1";
-        VERSION_MINOR = "0";
-        VERSION_PATCH = "1";
-        __EIP712_init("TrustedHintRegistry", version());
-    }
+    /**
+      * Implement method for subsequent upgrades; has to be called via proxy after upgrade.
+      * increase reinitializer counter by 1 for each new implementation.
+      *  function updateVersion() reinitializer(1) public {
+      *      VERSION_MAJOR = "X";
+      *      VERSION_MINOR = "X";
+      *      VERSION_PATCH = "X";
+      *      VERSION_DELIMITER = ".";
+      *      __EIP712_init("TrustedHintRegistry", version());
+      *  }
+    */
 
-    function wow() public pure returns (bool) {
-        return true;
-    }
 
     ///////////////  HINT MANAGEMENT  ///////////////
 

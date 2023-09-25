@@ -7,10 +7,21 @@ import { TrustedHintRegistry } from "../src/TrustedHintRegistry.sol";
 
 contract UpgradeLogic is Script {
     function run() public {
+        // Get instance of already deployed proxy contract
         address proxy = vm.envAddress("ETH_PROXY_ADDRESS");
-        console.log("Proxy Address: ", proxy);
         TrustedHintRegistry wrappedProxy = TrustedHintRegistry(address(proxy));
 
+        // Deploy new implementation in _memory_ to compare versions later on
+        TrustedHintRegistry newImplementationTest = new TrustedHintRegistry();
+        newImplementationTest.updateVersion();
+
+        if (keccak256(abi.encodePacked(wrappedProxy.version()))
+            == keccak256(abi.encodePacked(newImplementationTest.version()))) {
+            console.log("!!!!!!!!!! Deployment skipped, version has not changed !!!!!!!!!!");
+            return;
+        }
+
+        // Deploy new implementation and update proxy _on-chain_
         vm.startBroadcast();
         TrustedHintRegistry implementationNew = new TrustedHintRegistry();
         wrappedProxy.upgradeTo(address(implementationNew));
