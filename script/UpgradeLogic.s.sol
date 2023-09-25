@@ -13,7 +13,7 @@ contract UpgradeLogic is Script {
 
         // Deploy new implementation in _memory_ to compare versions later on
         TrustedHintRegistry newImplementationTest = new TrustedHintRegistry();
-        newImplementationTest.updateVersion();
+        //newImplementationTest.updateVersion();
 
         if (keccak256(abi.encodePacked(wrappedProxy.version()))
             == keccak256(abi.encodePacked(newImplementationTest.version()))) {
@@ -28,7 +28,7 @@ contract UpgradeLogic is Script {
 
         // Wrap in ABI to support easier calls
         TrustedHintRegistry wrappedProxyNew = TrustedHintRegistry(address(proxy));
-        wrappedProxyNew.updateVersion();
+        //wrappedProxyNew.updateVersion();
         vm.stopBroadcast();
 
         console.log("Chain ID: ", block.chainid);
