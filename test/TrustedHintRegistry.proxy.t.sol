@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.20;
 
 import { console, Test } from "forge-std/Test.sol";
@@ -5,8 +6,10 @@ import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy
 import { TrustedHintRegistry } from "../src/TrustedHintRegistry.sol";
 import { TrustedHintRegistryVX } from "./utils/TrustedHintRegistryVX.sol";
 
+/*
+* @notice Test proxy functionality of TrustedHintRegistry
+*/
 contract ProxyTest is Test {
-
     function test_ShouldDeployImplementationAndProxy() public {
         TrustedHintRegistry implementation = new TrustedHintRegistry();
         bytes memory data = abi.encodeCall(TrustedHintRegistry.initialize, ());

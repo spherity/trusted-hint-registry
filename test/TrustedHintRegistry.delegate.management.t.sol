@@ -1,10 +1,15 @@
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.20;
+
 import { console, Test } from "forge-std/Test.sol";
 import { TrustedHintRegistry } from "../src/TrustedHintRegistry.sol";
 import { Sig712Utils } from "./utils/Sig712Utils.sol";
 import { Events } from "./utils/Events.sol";
 
-contract ManagementTest is Test, Events {
+/*
+* @notice Test util functionality of TrustedHintRegistry
+*/
+contract DelegateManagementTest is Test, Events {
     TrustedHintRegistry internal registry;
     Sig712Utils internal sig712;
     address internal peterAddress;
