@@ -55,6 +55,12 @@ contract UtilTest is Test {
         assertFalse(registry.identityIsOwner(peterAddress, bytes32(0), marieAddress));
     }
 
+    function testFuzz_FailIdentityIsOwnerIfNotOwner(address _notOwner) public {
+        if (_notOwner != peterAddress) {
+            assertFalse(registry.identityIsOwner(peterAddress, bytes32(0), _notOwner));
+        }
+    }
+
     function test_IdentityIsDelegate() public {
         address namespace = peterAddress;
         bytes32 list = bytes32(0);
@@ -68,5 +74,11 @@ contract UtilTest is Test {
 
     function test_FailIdentityIsDelegateIfNotDelegate() public {
         assertFalse(registry.identityIsDelegate(peterAddress, bytes32(0), marieAddress));
+    }
+
+    function testFuzz_FailIdentityIsDelegateIfNotDelegate(address _notDelegate) public {
+        if (_notDelegate != peterAddress) {
+            assertFalse(registry.identityIsDelegate(peterAddress, bytes32(0), _notDelegate));
+        }
     }
 }
