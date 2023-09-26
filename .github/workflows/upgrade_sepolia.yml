@@ -15,7 +15,7 @@ on:
 
 jobs:
   deploy:
-    name: upgrade - sepolia
+    name: Sepolia
     environment: sepolia
     runs-on: ubuntu-latest
     steps:
@@ -23,7 +23,7 @@ jobs:
       - uses: foundry-rs/foundry-toolchain@v1
       - name: Build
         run: forge build
-      - name: Upgrade
+      - name: Upgrade Logic Contract on Sepolia
         run: forge script UpgradeLogic --rpc-url ${{ secrets.RPC_URL }} --private-key ${{ secrets.ETH_PRIVATE_KEY }} --etherscan-api-key ${{ secrets.ETHERSCAN_API_KEY }} --verify --optimize --broadcast
 
         env:
