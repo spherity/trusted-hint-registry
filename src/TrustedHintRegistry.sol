@@ -21,6 +21,11 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
     string public VERSION_PATCH;
     string public VERSION_DELIMITER;
 
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
     function initialize() initializer public {
         __Pausable_init();
         __Ownable_init();

@@ -3,6 +3,7 @@ pragma solidity ^0.8.20;
 
 import { console, Test } from "forge-std/Test.sol";
 import { TrustedHintRegistry } from "../src/TrustedHintRegistry.sol";
+import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { Sig712Utils } from "./utils/Sig712Utils.sol";
 import { Events } from "./utils/Events.sol";
 
@@ -20,8 +21,12 @@ contract ListStatusManagementTest is Test, Events {
     function setUp() public {
         // Owner of this contract is address(0)!
         vm.startPrank(address(0));
-        registry = new TrustedHintRegistry();
-        registry.initialize();
+        TrustedHintRegistry implementation = new TrustedHintRegistry();
+        bytes memory data = abi.encodeCall(TrustedHintRegistry.initialize, ());
+        ERC1967Proxy proxy = new ERC1967Proxy(address(implementation), data);
+
+        // wrap in ABI to support easier calls
+        registry = TrustedHintRegistry(address(proxy));
         sig712 = new Sig712Utils(registry.version(), address(registry));
         vm.stopPrank();
 
