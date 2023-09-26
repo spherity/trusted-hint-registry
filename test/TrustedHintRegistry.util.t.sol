@@ -81,4 +81,34 @@ contract UtilTest is Test {
             assertFalse(registry.identityIsDelegate(peterAddress, bytes32(0), _notDelegate));
         }
     }
+
+    function test_Pause() public {
+        bytes32 list = keccak256("list");
+        bytes32 key = keccak256("key");
+        bytes32 value = keccak256("value");
+
+
+        vm.prank(peterAddress);
+        registry.setHint(peterAddress, list, key, value);
+        assertEq(registry.getHint(peterAddress, list, key), value);
+        assertEq(registry.paused(), false);
+
+        vm.prank(address(0));
+        registry.pause();
+        assertEq(registry.paused(), true);
+
+        vm.prank(peterAddress);
+        bytes32 key2= keccak256("key2");
+        bytes32 value2 = keccak256("value2");
+        vm.expectRevert("Pausable: paused");
+        registry.setHint(peterAddress, list, key2, value2);
+        assertEq(registry.getHint(peterAddress, list, key), value);
+
+        vm.prank(address(0));
+        registry.unpause();
+
+        vm.prank(peterAddress);
+        registry.setHint(peterAddress, list, key2, value2);
+        assertEq(registry.getHint(peterAddress, list, key2), value2);
+    }
 }
