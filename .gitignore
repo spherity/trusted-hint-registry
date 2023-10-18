@@ -8,6 +8,8 @@ out/
 /broadcast/*/11155111/
 /broadcast/**/dry-run/
 
+/lib/*
+
 # Docs
 docs/
 
