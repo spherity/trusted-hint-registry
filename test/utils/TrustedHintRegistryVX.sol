@@ -13,6 +13,7 @@ contract TrustedHintRegistryVX is Initializable, EIP712Upgradeable, PausableUpgr
     mapping(bytes32 => address) public newOwners;
     mapping(address => uint256) public nonces;
     mapping(bytes32 => bool) public revokedLists;
+    mapping(bytes32 => bytes) public metadata;
 
     string public VERSION_MAJOR;
     string public VERSION_MINOR;

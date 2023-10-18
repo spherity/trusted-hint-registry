@@ -17,7 +17,6 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
     mapping(bytes32 => bool) public revokedLists;
     mapping(bytes32 => bytes) public metadata;
 
-
     string public VERSION_MAJOR;
     string public VERSION_MINOR;
     string public VERSION_PATCH;
@@ -42,15 +41,14 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
     /**
       * Implement method for subsequent upgrades; has to be called via proxy after upgrade.
       * increase reinitializer counter by 1 for each new implementation.
-      */
-    function updateVersion() reinitializer(1) public {
-        VERSION_MAJOR = "1";
-        VERSION_MINOR = "1";
-        VERSION_PATCH = "0";
-        VERSION_DELIMITER = ".";
-        __EIP712_init("TrustedHintRegistry", "1.1.0");
-     }
-
+      *  function updateVersion() reinitializer(1) public {
+      *      VERSION_MAJOR = "X";
+      *      VERSION_MINOR = "X";
+      *      VERSION_PATCH = "X";
+      *      VERSION_DELIMITER = ".";
+      *      __EIP712_init("TrustedHintRegistry", version());
+      *  }
+    */
 
     ///////////////  HINT MANAGEMENT  ///////////////
 
