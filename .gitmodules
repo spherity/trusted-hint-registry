@@ -10,6 +10,3 @@
 [submodule "lib/forge-safe"]
 	path = lib/forge-safe
 	url = https://github.com/ind-igo/forge-safe
-[submodule "lib/safe-tools"]
-	path = lib/safe-tools
-	url = https://github.com/colinnielsen/safe-tools

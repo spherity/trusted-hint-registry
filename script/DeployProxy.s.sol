@@ -17,14 +17,18 @@ contract DeployProxy is Script {
         // Deploy proxy, reference implementation, and call initialize
         bytes memory data = abi.encodeCall(TrustedHintRegistry.initialize, ());
         proxy = new ERC1967Proxy(address(implementation), data);
-        vm.stopBroadcast();
 
         // Wrap proxy in ABI to support easier calls
         wrappedProxy = TrustedHintRegistry(address(proxy));
 
+        address safeAddress = 0x967fced2cb1aFb5f973816d2d643fE910B05df84;
+        wrappedProxy.transferOwnership(safeAddress);
+        vm.stopBroadcast();
+
         console.log("Chain ID: ", block.chainid);
         console.log("TX Sender: ", msg.sender);
         console.log("Proxy Address: ", address(proxy));
+        console.log("Proxy Owner: ", wrappedProxy.owner());
         console.log("Logic Address: ", address(implementation));
         console.log("Contract Version: ", wrappedProxy.version());
     }
