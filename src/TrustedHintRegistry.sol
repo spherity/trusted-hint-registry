@@ -595,7 +595,8 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
         metadata[generateValueLocationHash(_namespace, _list, _key, _value)] = _metadata;
     }
 
-    function setHintMetadataSigned(address _namespace, bytes32 _list, bytes32 _key, bytes32 _value, bytes calldata _metadata, address _signer, bytes calldata _signature) public isOwner(_namespace, _list) whenNotPaused {
+    function setHintMetadataSigned(address _namespace, bytes32 _list, bytes32 _key, bytes32 _value, bytes calldata _metadata, address _signer, bytes calldata _signature) public whenNotPaused {
+        uint nonce = nonces[_signer];
         bytes32 hash = _hashTypedDataV4(keccak256(abi.encode(
             keccak256("SetHintMetadataSigned(address namespace,bytes32 list,bytes32 key,bytes32 value,bytes metadata,address signer,uint256 nonce)"),
             _namespace,
@@ -603,7 +604,8 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
             _key,
             _value,
             _metadata,
-            nonces[_signer]
+            _signer,
+           nonce
         )));
         address recoveredSigner = ECDSAUpgradeable.recover(hash, _signature);
         require(identityIsOwner(_namespace, _list, recoveredSigner), "Signer is not an owner");
@@ -624,6 +626,7 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
             _key,
             _value,
             _metadata,
+            _signer,
             nonces[_signer]
         )));
         address recoveredSigner = ECDSAUpgradeable.recover(hash, _signature);
@@ -643,6 +646,7 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
             _namespace,
             _list,
             _metadata,
+            _signer,
             nonces[_signer]
         )));
         address recoveredSigner = ECDSAUpgradeable.recover(hash, _signature);
@@ -662,6 +666,7 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
             _namespace,
             _list,
             _metadata,
+            _signer,
             nonces[_signer]
         )));
         address recoveredSigner = ECDSAUpgradeable.recover(hash, _signature);
