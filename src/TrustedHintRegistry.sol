@@ -620,7 +620,7 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
 
     function setHintMetadataDelegatedSigned(address _namespace, bytes32 _list, bytes32 _key, bytes32 _value, bytes calldata _metadata, address _signer, bytes calldata _signature) public whenNotPaused {
         bytes32 hash = _hashTypedDataV4(keccak256(abi.encode(
-            keccak256("SetHintDelegatedSigned(address namespace,bytes32 list,bytes32 key,bytes32 value,bytes metadata,address signer,uint256 nonce)"),
+            keccak256("SetHintMetadataDelegatedSigned(address namespace,bytes32 list,bytes32 key,bytes32 value,bytes metadata,address signer,uint256 nonce)"),
             _namespace,
             _list,
             _key,
