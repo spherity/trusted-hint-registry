@@ -640,9 +640,9 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
         metadata[generateListLocationHash(_namespace, _list)] = _metadata;
     }
 
-    function setListMetadataSigned(address _namespace, bytes32 _list, bytes calldata _metadata, address _signer, bytes calldata _signature) public isOwner(_namespace, _list) whenNotPaused {
+    function setListMetadataSigned(address _namespace, bytes32 _list, bytes calldata _metadata, address _signer, bytes calldata _signature) public whenNotPaused {
         bytes32 hash = _hashTypedDataV4(keccak256(abi.encode(
-            keccak256("SetListDelegatedSigned(address namespace,bytes32 list,bytes metadata,address signer,uint256 nonce)"),
+            keccak256("SetListMetadataSigned(address namespace,bytes32 list,bytes metadata,address signer,uint256 nonce)"),
             _namespace,
             _list,
             _metadata,
@@ -662,7 +662,7 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
 
     function setListMetadataDelegatedSigned(address _namespace, bytes32 _list, bytes calldata _metadata, address _signer, bytes calldata _signature) public whenNotPaused {
         bytes32 hash = _hashTypedDataV4(keccak256(abi.encode(
-            keccak256("SetListDelegatedSigned(address namespace,bytes32 list,bytes metadata,address signer,uint256 nonce)"),
+            keccak256("SetListMetadataDelegatedSigned(address namespace,bytes32 list,bytes metadata,address signer,uint256 nonce)"),
             _namespace,
             _list,
             _metadata,

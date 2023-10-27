@@ -41,6 +41,12 @@ contract Sig712Utils {
         address newOwner;
     }
 
+    struct ListMetadataEntry {
+        address namespace;
+        bytes32 list;
+        bytes metadata;
+    }
+
     struct AddListDelegateEntry {
         address namespace;
         bytes32 list;
@@ -63,6 +69,8 @@ contract Sig712Utils {
         SET_HINTS_DELEGATED,
         SET_LIST_STATUS,
         SET_LIST_OWNER,
+        SET_LIST_METADATA,
+        SET_LIST_METADATA_DELEGATED,
         ADD_LIST_DELEGATE,
         REMOVE_LIST_DELEGATE
     }
@@ -100,6 +108,10 @@ contract Sig712Utils {
             return keccak256("SetListStatusSigned(address namespace,bytes32 list,bool revoked,address signer,uint256 nonce)");
         } else if (_action == MetaAction.SET_LIST_OWNER) {
             return keccak256("SetListOwnerSigned(address namespace,bytes32 list,address newOwner,address signer,uint256 nonce)");
+        } else if (_action == MetaAction.SET_LIST_METADATA) {
+            return keccak256("SetListMetadataSigned(address namespace,bytes32 list,bytes metadata,address signer,uint256 nonce)");
+        } else if (_action == MetaAction.SET_LIST_METADATA_DELEGATED) {
+            return keccak256("SetListMetadataDelegatedSigned(address namespace,bytes32 list,bytes metadata,address signer,uint256 nonce)");
         } else if (_action == MetaAction.ADD_LIST_DELEGATE) {
             return keccak256("AddListDelegateSigned(address namespace,bytes32 list,address delegate,uint256 untilTimestamp,address signer,uint256 nonce)");
         } else if (_action == MetaAction.REMOVE_LIST_DELEGATE) {
@@ -494,6 +506,82 @@ contract Sig712Utils {
                 "\x19\x01",
                 DOMAIN_SEPARATOR,
                 getSetHintMetadataDelegatedStructHash(_hint, _signer, _nonce)
+            )
+        );
+    }
+
+    ///////////////  SET LIST METADATA  ///////////////
+
+    /*
+    * @dev Get the struct hash for SetListMetadata action
+    * @param _listEntry ListMetadataEntry
+    * @param _signer Address of signature creator
+    * @param _nonce Nonce of signature creator
+    * @return Hash of the ListMetadataEntry action
+    */
+    function getSetListMetadataStructHash(ListMetadataEntry calldata _listEntry, address _signer, uint _nonce) internal pure returns (bytes32) {
+        return keccak256(abi.encode(
+            getTypeHash(MetaAction.SET_LIST_METADATA),
+            _listEntry.namespace,
+            _listEntry.list,
+            _listEntry.metadata,
+            _signer,
+            _nonce
+        ));
+    }
+
+    /*
+    * @dev Get the typed data hash of a SetListMetadata action
+    * @param _listEntry ListMetadataEntry
+    * @param _signer Address of signature creator
+    * @param _nonce Nonce of signature creator
+    * @return Hash of the SetListMetadata action
+    */
+    function getSetListMetadataTypedDataHash(ListMetadataEntry calldata _listEntry, address _signer, uint _nonce) public view returns (bytes32) {
+        return
+            keccak256(
+            abi.encodePacked(
+                "\x19\x01",
+                DOMAIN_SEPARATOR,
+                getSetListMetadataStructHash(_listEntry, _signer, _nonce)
+            )
+        );
+    }
+
+    ///////////////  SET LIST METADATA DELEGATED  ///////////////
+
+    /*
+    * @dev Get the struct hash for SetListMetadata action
+    * @param _listEntry ListMetadataEntry
+    * @param _signer Address of signature creator
+    * @param _nonce Nonce of signature creator
+    * @return Hash of the ListMetadataEntry action
+    */
+    function getSetListMetadataDelegatedStructHash(ListMetadataEntry calldata _listEntry, address _signer, uint _nonce) internal pure returns (bytes32) {
+        return keccak256(abi.encode(
+            getTypeHash(MetaAction.SET_LIST_METADATA_DELEGATED),
+            _listEntry.namespace,
+            _listEntry.list,
+            _listEntry.metadata,
+            _signer,
+            _nonce
+        ));
+    }
+
+    /*
+    * @dev Get the typed data hash of a SetListMetadata action
+    * @param _listEntry ListMetadataEntry
+    * @param _signer Address of signature creator
+    * @param _nonce Nonce of signature creator
+    * @return Hash of the SetListMetadata action
+    */
+    function getSetListMetadataDelegatedTypedDataHash(ListMetadataEntry calldata _listEntry, address _signer, uint _nonce) public view returns (bytes32) {
+        return
+            keccak256(
+            abi.encodePacked(
+                "\x19\x01",
+                DOMAIN_SEPARATOR,
+                getSetListMetadataDelegatedStructHash(_listEntry, _signer, _nonce)
             )
         );
     }
