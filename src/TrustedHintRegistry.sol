@@ -137,11 +137,12 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
     */
     function setHintSigned(address _namespace, bytes32 _list, bytes32 _key, bytes32 _value, bytes calldata _metadata, address _signer, bytes calldata _signature) public whenNotPaused {
         bytes32 hash = _hashTypedDataV4(keccak256(abi.encode(
-            keccak256("SetHintSigned(address namespace,bytes32 list,bytes32 key,bytes32 value,address signer,uint256 nonce)"),
+            keccak256("SetHintSigned(address namespace,bytes32 list,bytes32 key,bytes32 value,bytes metadata,address signer,uint256 nonce)"),
             _namespace,
             _list,
             _key,
             _value,
+            _metadata,
             _signer,
             nonces[_signer]
         )));
@@ -317,11 +318,12 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
     */
     function setHintDelegatedSigned(address _namespace, bytes32 _list, bytes32 _key, bytes32 _value, bytes calldata _metadata, address _signer, bytes calldata _signature) public whenNotPaused {
         bytes32 hash = _hashTypedDataV4(keccak256(abi.encode(
-            keccak256("SetHintDelegatedSigned(address namespace,bytes32 list,bytes32 key,bytes32 value,address signer,uint256 nonce)"),
+            keccak256("SetHintDelegatedSigned(address namespace,bytes32 list,bytes32 key,bytes32 value,bytes metadata,address signer,uint256 nonce)"),
             _namespace,
             _list,
             _key,
             _value,
+            _metadata,
             _signer,
             nonces[_signer]
         )));
@@ -591,21 +593,38 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
 
     ///////////////  METADATA  ///////////////
 
-    function setHintMetadata(address _namespace, bytes32 _list, bytes32 _key, bytes32 _value, bytes calldata _metadata) public isOwner(_namespace, _list) whenNotPaused {
+    /**
+      * @notice Set metadata
+      * @param _namespace Address namespace
+      * @param _list Bytes32 list identifier
+      * @param _key Bytes32 key identifier for hint value
+      * @param _value Bytes32 value identifier for hint value
+    */
+    function setMetadata(address _namespace, bytes32 _list, bytes32 _key, bytes32 _value, bytes calldata _metadata) public isOwner(_namespace, _list) whenNotPaused {
         metadata[generateValueLocationHash(_namespace, _list, _key, _value)] = _metadata;
     }
 
-    function setHintMetadataSigned(address _namespace, bytes32 _list, bytes32 _key, bytes32 _value, bytes calldata _metadata, address _signer, bytes calldata _signature) public whenNotPaused {
+    /**
+      * @notice Set metadata with a raw signature
+      * @param _namespace Address namespace
+      * @param _list Bytes32 list identifier
+      * @param _key Bytes32 key identifier for hint value
+      * @param _value Bytes32 hint value
+      * @param _metadata New metadata value
+      * @param _signer Address of signature creator
+      * @param _signature Raw signature created according to EIP-712
+    */
+    function setMetadataSigned(address _namespace, bytes32 _list, bytes32 _key, bytes32 _value, bytes calldata _metadata, address _signer, bytes calldata _signature) public whenNotPaused {
         uint nonce = nonces[_signer];
         bytes32 hash = _hashTypedDataV4(keccak256(abi.encode(
-            keccak256("SetHintMetadataSigned(address namespace,bytes32 list,bytes32 key,bytes32 value,bytes metadata,address signer,uint256 nonce)"),
+            keccak256("SetMetadataSigned(address namespace,bytes32 list,bytes32 key,bytes32 value,bytes metadata,address signer,uint256 nonce)"),
             _namespace,
             _list,
             _key,
             _value,
             _metadata,
             _signer,
-           nonce
+            nonce
         )));
         address recoveredSigner = ECDSAUpgradeable.recover(hash, _signature);
         require(identityIsOwner(_namespace, _list, recoveredSigner), "Signer is not an owner");
@@ -614,13 +633,31 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
         metadata[locationHash] = _metadata;
     }
 
-    function setHintMetadataDelegated(address _namespace, bytes32 _list, bytes32 _key, bytes32 _value, bytes calldata _metadata) public isDelegate(_namespace, _list) whenNotPaused {
+    /**
+      * @notice Set metadata as a delegate
+      * @param _namespace Address namespace
+      * @param _list Bytes32 list identifier
+      * @param _key Bytes32 key identifier for hint value
+      * @param _value Bytes32 hint value
+      * @param _metadata New metadata value
+    */
+    function setMetadataDelegated(address _namespace, bytes32 _list, bytes32 _key, bytes32 _value, bytes calldata _metadata) public isDelegate(_namespace, _list) {
         metadata[generateValueLocationHash(_namespace, _list, _key, _value)] = _metadata;
     }
 
-    function setHintMetadataDelegatedSigned(address _namespace, bytes32 _list, bytes32 _key, bytes32 _value, bytes calldata _metadata, address _signer, bytes calldata _signature) public whenNotPaused {
+    /**
+      * @notice Set metadata as a delegate with a raw signature
+      * @param _namespace Address namespace
+      * @param _list Bytes32 list identifier
+      * @param _key Bytes32 key identifier for hint value
+      * @param _value Bytes32 hint value
+      * @param _metadata New metadata value
+      * @param _signer Address of signature creator
+      * @param _signature Raw signature created according to EIP-712
+    */
+    function setMetadataDelegatedSigned(address _namespace, bytes32 _list, bytes32 _key, bytes32 _value, bytes calldata _metadata, address _signer, bytes calldata _signature) public whenNotPaused {
         bytes32 hash = _hashTypedDataV4(keccak256(abi.encode(
-            keccak256("SetHintMetadataDelegatedSigned(address namespace,bytes32 list,bytes32 key,bytes32 value,bytes metadata,address signer,uint256 nonce)"),
+            keccak256("SetMetadataDelegatedSigned(address namespace,bytes32 list,bytes32 key,bytes32 value,bytes metadata,address signer,uint256 nonce)"),
             _namespace,
             _list,
             _key,
@@ -633,46 +670,6 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
         require(identityIsDelegate(_namespace, _list, recoveredSigner), "Signer is not a delegate");
         nonces[recoveredSigner]++;
         bytes32 locationHash = generateValueLocationHash(_namespace, _list, _key, _value);
-        metadata[locationHash] = _metadata;
-    }
-
-    function setListMetadata(address _namespace, bytes32 _list, bytes calldata _metadata) public isOwner(_namespace, _list) whenNotPaused {
-        metadata[generateListLocationHash(_namespace, _list)] = _metadata;
-    }
-
-    function setListMetadataSigned(address _namespace, bytes32 _list, bytes calldata _metadata, address _signer, bytes calldata _signature) public whenNotPaused {
-        bytes32 hash = _hashTypedDataV4(keccak256(abi.encode(
-            keccak256("SetListMetadataSigned(address namespace,bytes32 list,bytes metadata,address signer,uint256 nonce)"),
-            _namespace,
-            _list,
-            _metadata,
-            _signer,
-            nonces[_signer]
-        )));
-        address recoveredSigner = ECDSAUpgradeable.recover(hash, _signature);
-        require(identityIsOwner(_namespace, _list, recoveredSigner), "Signer is not an owner");
-        nonces[recoveredSigner]++;
-        bytes32 locationHash = generateListLocationHash(_namespace, _list);
-        metadata[locationHash] = _metadata;
-    }
-
-    function setListMetadataDelegated(address _namespace, bytes32 _list, bytes calldata _metadata) public isDelegate(_namespace, _list) whenNotPaused {
-        metadata[generateListLocationHash(_namespace, _list)] = _metadata;
-    }
-
-    function setListMetadataDelegatedSigned(address _namespace, bytes32 _list, bytes calldata _metadata, address _signer, bytes calldata _signature) public whenNotPaused {
-        bytes32 hash = _hashTypedDataV4(keccak256(abi.encode(
-            keccak256("SetListMetadataDelegatedSigned(address namespace,bytes32 list,bytes metadata,address signer,uint256 nonce)"),
-            _namespace,
-            _list,
-            _metadata,
-            _signer,
-            nonces[_signer]
-        )));
-        address recoveredSigner = ECDSAUpgradeable.recover(hash, _signature);
-        require(identityIsDelegate(_namespace, _list, recoveredSigner), "Signer is not a delegate");
-        nonces[recoveredSigner]++;
-        bytes32 locationHash = generateListLocationHash(_namespace, _list);
         metadata[locationHash] = _metadata;
     }
 
