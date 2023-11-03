@@ -241,11 +241,12 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
     */
     function setHintsSigned(address _namespace, bytes32 _list, bytes32[] calldata _keys, bytes32[] calldata _values, bytes[] calldata _metadata, address _signer, bytes calldata _signature) public whenNotPaused {
         bytes32 hash = _hashTypedDataV4(keccak256(abi.encode(
-            keccak256("SetHintsSigned(address namespace,bytes32 list,bytes32[] keys,bytes32[] values,address signer,uint256 nonce)"),
+            keccak256("SetHintsSigned(address namespace,bytes32 list,bytes32[] keys,bytes32[] values,bytes[] _metadata,address signer,uint256 nonce)"),
             _namespace,
             _list,
             keccak256(abi.encodePacked(_keys)),
             keccak256(abi.encodePacked(_values)),
+            keccak256(abi.encode(_metadata)),
             _signer,
             nonces[_signer]
         )));
@@ -394,11 +395,12 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
     */
     function setHintsDelegatedSigned(address _namespace, bytes32 _list, bytes32[] calldata _keys, bytes32[] calldata _values, bytes[] calldata _metadata, address _signer, bytes calldata _signature) public whenNotPaused {
         bytes32 hash = _hashTypedDataV4(keccak256(abi.encode(
-            keccak256("SetHintsDelegatedSigned(address namespace,bytes32 list,bytes32[] keys,bytes32[] values,address signer,uint256 nonce)"),
+            keccak256("SetHintsDelegatedSigned(address namespace,bytes32 list,bytes32[] keys,bytes32[] values, bytes[] _metadata,address signer,uint256 nonce)"),
             _namespace,
             _list,
             keccak256(abi.encodePacked(_keys)),
             keccak256(abi.encodePacked(_values)),
+            keccak256(abi.encode(_metadata)),
             _signer,
             nonces[_signer]
         )));

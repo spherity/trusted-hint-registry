@@ -29,6 +29,15 @@ contract Sig712Utils {
         bytes32[] values;
     }
 
+    struct HintMetadataEntries {
+        address namespace;
+        bytes32 list;
+        bytes32[] keys;
+        bytes32[] values;
+        bytes[] metadata;
+    }
+
+
     struct ListStatusEntry {
         address namespace;
         bytes32 list;
@@ -65,10 +74,12 @@ contract Sig712Utils {
         SET_HINT_WITH_METADATA,
         SET_HINT_METADATA,
         SET_HINT_METADATA_DELEGATED,
-        SET_HINTS,
         SET_HINT_DELEGATED,
         SET_HINT_DELEGATED_WITH_METADATA,
+        SET_HINTS,
+        SET_HINTS_WITH_METADATA,
         SET_HINTS_DELEGATED,
+        SET_HINTS_DELEGATED_WITH_METADATA,
         SET_LIST_STATUS,
         SET_LIST_OWNER,
         SET_LIST_METADATA,
@@ -100,6 +111,8 @@ contract Sig712Utils {
             return keccak256("SetHintSigned(address namespace,bytes32 list,bytes32 key,bytes32 value,bytes metadata,address signer,uint256 nonce)");
         } else if (_action == MetaAction.SET_HINTS) {
             return keccak256("SetHintsSigned(address namespace,bytes32 list,bytes32[] keys,bytes32[] values,address signer,uint256 nonce)");
+        } else if (_action == MetaAction.SET_HINTS_WITH_METADATA) {
+            return keccak256("SetHintsSigned(address namespace,bytes32 list,bytes32[] keys,bytes32[] values,bytes[] _metadata,address signer,uint256 nonce)");
         } else if (_action == MetaAction.SET_HINT_METADATA) {
             return keccak256("SetHintMetadataSigned(address namespace,bytes32 list,bytes32 key,bytes32 value,bytes metadata,address signer,uint256 nonce)");
         } else if (_action == MetaAction.SET_HINT_METADATA_DELEGATED) {
@@ -110,6 +123,8 @@ contract Sig712Utils {
             return keccak256("SetHintDelegatedSigned(address namespace,bytes32 list,bytes32 key,bytes32 value,bytes metadata,address signer,uint256 nonce)");
         }  else if (_action == MetaAction.SET_HINTS_DELEGATED) {
             return keccak256("SetHintsDelegatedSigned(address namespace,bytes32 list,bytes32[] keys,bytes32[] values,address signer,uint256 nonce)");
+        } else if (_action == MetaAction.SET_HINTS_DELEGATED_WITH_METADATA) {
+            return keccak256("SetHintsDelegatedSigned(address namespace,bytes32 list,bytes32[] keys,bytes32[] values, bytes[] _metadata,address signer,uint256 nonce)");
         } else if (_action == MetaAction.SET_LIST_STATUS) {
             return keccak256("SetListStatusSigned(address namespace,bytes32 list,bool revoked,address signer,uint256 nonce)");
         } else if (_action == MetaAction.SET_LIST_OWNER) {
@@ -362,6 +377,47 @@ contract Sig712Utils {
             )
         );
     }
+
+    ///////////////  SET HINTS DELEGATED WITH METADATA  ///////////////
+
+    /*
+    * @dev Get the struct hash for SetHintsDelegatedWithMetadata action
+    * @param _hints HintMetadataEntries
+    * @param _signer Address of signature creator
+    * @param _nonce Nonce of signature creator
+    * @return Hash of the SetHintDelegatedWithMetadata action
+    */
+    function getSetHintsDelegatedWithMetadataStructHash(HintMetadataEntries calldata _hints, address _signer, uint _nonce) internal pure returns (bytes32) {
+        return keccak256(abi.encode(
+            getTypeHash(MetaAction.SET_HINTS_DELEGATED_WITH_METADATA),
+            _hints.namespace,
+            _hints.list,
+            keccak256(abi.encodePacked(_hints.keys)),
+            keccak256(abi.encodePacked(_hints.values)),
+            keccak256(abi.encode(_hints.metadata)),
+            _signer,
+            _nonce
+        ));
+    }
+
+    /*
+    * @dev Get the typed data hash of a SetHintsDelegatedWithMetadata action
+    * @param _hint HintMetadataEntry
+    * @param _signer Address of signature creator
+    * @param _nonce Nonce of signature creator
+    * @return Hash of the SetHintsDelegated action
+    */
+    function getSetHintsDelegatedWithMetadataTypedDataHash(HintMetadataEntries calldata _hints, address _signer, uint _nonce) public view returns (bytes32) {
+        return
+            keccak256(
+            abi.encodePacked(
+                "\x19\x01",
+                DOMAIN_SEPARATOR,
+                getSetHintsDelegatedWithMetadataStructHash(_hints, _signer, _nonce)
+            )
+        );
+    }
+
 
     ///////////////  SET LIST STATUS  ///////////////
 
@@ -668,6 +724,46 @@ contract Sig712Utils {
                 "\x19\x01",
                 DOMAIN_SEPARATOR,
                 getSetListMetadataDelegatedStructHash(_listEntry, _signer, _nonce)
+            )
+        );
+    }
+
+    ///////////////  SET HINTS METADATA  ///////////////
+
+    /*
+    * @dev Get the struct hash for SetHintsMetadata action
+    * @param _hints HintMetadataEntries
+    * @param _signer Address of signature creator
+    * @param _nonce Nonce of signature creator
+    * @return Hash of the SetHintsMetadata action
+    */
+    function getSetHintsMetadataStructHash(HintMetadataEntries calldata _hints, address _signer, uint _nonce) internal pure returns (bytes32) {
+        return keccak256(abi.encode(
+            getTypeHash(MetaAction.SET_HINTS_WITH_METADATA),
+            _hints.namespace,
+            _hints.list,
+            keccak256(abi.encodePacked(_hints.keys)),
+            keccak256(abi.encodePacked(_hints.values)),
+            keccak256(abi.encode(_hints.metadata)),
+            _signer,
+            _nonce
+        ));
+    }
+
+    /*
+    * @dev Get the typed data hash of a SetHintsMetadata action
+    * @param _hints HintMetadataEntries
+    * @param _signer Address of signature creator
+    * @param _nonce Nonce of signature creator
+    * @return Hash of the SetHintsMetadata action
+    */
+    function getSetHintsMetadataTypedDataHash(HintMetadataEntries calldata _hints, address _signer, uint _nonce) public view returns (bytes32) {
+        return
+            keccak256(
+            abi.encodePacked(
+                "\x19\x01",
+                DOMAIN_SEPARATOR,
+                getSetHintsMetadataStructHash(_hints, _signer, _nonce)
             )
         );
     }
