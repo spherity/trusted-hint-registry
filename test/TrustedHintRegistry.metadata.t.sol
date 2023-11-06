@@ -251,7 +251,6 @@ contract MetadataTest is Test, Events {
         assertEq(registry.nonces(marieAddress), 0);
     }
 
-
     // SET HINTS WITH METADATA
     function test_SetHintsWithMetadata() public {
         vm.prank(namespace);
@@ -634,6 +633,8 @@ contract MetadataTest is Test, Events {
 
     ///////////////////// METADATA-ACTION ONLY TEST /////////////////////
 
+    // SET METADATA
+
     function test_SetMetadata() public {
         vm.prank(namespace);
 
@@ -663,4 +664,167 @@ contract MetadataTest is Test, Events {
         assertEq(registry.metadata(hintLocationHash), "");
     }
 
+    // SET METADATA SIGNED
+
+    function test_SetMetadataSigned() public {
+        vm.prank(address(999999));
+
+        bytes32 digest = sig712.getSetMetadataTypedDataHash(
+            Sig712Utils.HintMetadataEntry(peterAddress, list, key, value, metadata),
+            peterAddress,
+            registry.nonces(peterAddress)
+        );
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(peterPrivateKey, digest);
+        bytes memory signature = abi.encodePacked(r, s, v);
+
+        registry.setMetadataSigned(peterAddress, list, key, value, metadata, peterAddress, signature);
+
+        bytes32 hintLocationHashEntry = keccak256(abi.encodePacked(peterAddress, list, key, value));
+        assertEq(registry.metadata(hintLocationHashEntry), metadata);
+        assertEq(registry.nonces(peterAddress), 1);
+        assertEq(registry.nonces(address(999999)), 0);
+    }
+
+    function test_RevertSetMetadataSignedIfWrongOwner() public {
+        vm.prank(address(999999));
+
+        bytes32 digest = sig712.getSetMetadataTypedDataHash(
+            Sig712Utils.HintMetadataEntry(peterAddress, list, key, value, metadata),
+            peterAddress,
+            registry.nonces(peterAddress)
+        );
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(mariePrivateKey, digest);
+        bytes memory signature = abi.encodePacked(r, s, v);
+
+        vm.expectRevert("Signer is not an owner");
+        registry.setMetadataSigned(peterAddress, list, key, value, metadata, marieAddress, signature);
+
+        bytes32 hintLocationHashEntry = keccak256(abi.encodePacked(peterAddress, list, key, value));
+        assertEq(registry.metadata(hintLocationHashEntry), "");
+        assertEq(registry.nonces(marieAddress), 0);
+        assertEq(registry.nonces(peterAddress), 0);
+    }
+
+    function test_RevertSetMetadataSignedIfPaused() public {
+        vm.prank(address(0));
+        registry.pause();
+
+        vm.prank(address(999999));
+
+        bytes32 digest = sig712.getSetMetadataTypedDataHash(
+            Sig712Utils.HintMetadataEntry(peterAddress, list, key, value, metadata),
+            peterAddress,
+            registry.nonces(peterAddress)
+        );
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(peterPrivateKey, digest);
+        bytes memory signature = abi.encodePacked(r, s, v);
+
+        vm.expectRevert("Pausable: paused");
+        registry.setMetadataSigned(peterAddress, list, key, value, metadata, peterAddress, signature);
+
+        bytes32 hintLocationHashEntry = keccak256(abi.encodePacked(peterAddress, list, key, value));
+        assertEq(registry.metadata(hintLocationHashEntry), "");
+        assertEq(registry.nonces(peterAddress), 0);
+    }
+
+    // SET METADATA DELEGATED
+
+    function test_SetMetadataDelegated() public {
+        vm.prank(peterAddress);
+        registry.addListDelegate(peterAddress, list, marieAddress, 99999999);
+
+        vm.prank(marieAddress);
+        registry.setMetadataDelegated(peterAddress, list, key, value, metadata);
+
+        bytes32 hintLocationHashEntry = keccak256(abi.encodePacked(peterAddress, list, key, value));
+        assertEq(registry.metadata(hintLocationHashEntry), metadata);
+    }
+
+    function test_RevertSetMetadataDelegatedIfNotDelegate() public {
+        vm.prank(marieAddress);
+        vm.expectRevert("Caller is not a delegate");
+        registry.setMetadataDelegated(peterAddress, list, key, value, metadata);
+
+        bytes32 hintLocationHashEntry = keccak256(abi.encodePacked(peterAddress, list, key, value));
+        assertEq(registry.metadata(hintLocationHashEntry), "");
+    }
+
+    function test_RevertSetMetadataDelegatedIfPaused() public {
+        vm.prank(peterAddress);
+        registry.addListDelegate(peterAddress, list, marieAddress, 99999999);
+
+        vm.prank(address(0));
+        registry.pause();
+
+        vm.prank(marieAddress);
+        vm.expectRevert("Pausable: paused");
+        registry.setMetadataDelegated(peterAddress, list, key, value, metadata);
+
+        bytes32 hintLocationHashEntry = keccak256(abi.encodePacked(peterAddress, list, key, value));
+        assertEq(registry.metadata(hintLocationHashEntry), "");
+    }
+
+    // SET METADATA DELEGATED SIGNED
+
+    function test_SetMetadataDelegatedSigned() public {
+        vm.prank(peterAddress);
+        registry.addListDelegate(peterAddress, list, marieAddress, 99999999);
+
+        vm.prank(address(0));
+        bytes32 digest = sig712.getSetMetadataDelegatedTypedDataHash(
+            Sig712Utils.HintMetadataEntry(peterAddress, list, key, value, metadata),
+            marieAddress,
+            registry.nonces(marieAddress)
+        );
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(mariePrivateKey, digest);
+        bytes memory signature = abi.encodePacked(r, s, v);
+
+        registry.setMetadataDelegatedSigned(peterAddress, list, key, value, metadata, marieAddress, signature);
+
+        bytes32 hintLocationHashEntry = keccak256(abi.encodePacked(peterAddress, list, key, value));
+        assertEq(registry.metadata(hintLocationHashEntry), metadata);
+        assertEq(registry.nonces(marieAddress), 1);
+    }
+
+    function test_RevertSetMetadataDelegatedSignedIfWrongSigner() public {
+        vm.prank(marieAddress);
+        bytes32 digest = sig712.getSetMetadataDelegatedTypedDataHash(
+            Sig712Utils.HintMetadataEntry(peterAddress, list, key, value, metadata),
+            marieAddress,
+            registry.nonces(marieAddress)
+        );
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(mariePrivateKey, digest);
+        bytes memory signature = abi.encodePacked(r, s, v);
+
+        vm.expectRevert("Signer is not a delegate");
+        registry.setMetadataDelegatedSigned(peterAddress, list, key, value, metadata, marieAddress, signature);
+
+        bytes32 hintLocationHashEntry = keccak256(abi.encodePacked(peterAddress, list, key, value));
+        assertEq(registry.metadata(hintLocationHashEntry), "");
+        assertEq(registry.nonces(marieAddress), 0);
+    }
+
+    function test_RevertSetMetadataDelegatedSignedIfPaused() public {
+        vm.prank(peterAddress);
+        registry.addListDelegate(peterAddress, list, marieAddress, 99999999);
+
+        vm.prank(address(0));
+        registry.pause();
+
+        vm.prank(marieAddress);
+        bytes32 digest = sig712.getSetMetadataDelegatedTypedDataHash(
+            Sig712Utils.HintMetadataEntry(peterAddress, list, key, value, metadata),
+            marieAddress,
+            registry.nonces(marieAddress)
+        );
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(mariePrivateKey, digest);
+        bytes memory signature = abi.encodePacked(r, s, v);
+
+        vm.expectRevert("Pausable: paused");
+        registry.setMetadataDelegatedSigned(peterAddress, list, key, value, metadata, marieAddress, signature);
+
+        bytes32 hintLocationHashEntry = keccak256(abi.encodePacked(peterAddress, list, key, value));
+        assertEq(registry.metadata(hintLocationHashEntry), "");
+        assertEq(registry.nonces(marieAddress), 0);
+    }
 }

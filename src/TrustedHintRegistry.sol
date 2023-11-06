@@ -643,7 +643,7 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
       * @param _value Bytes32 hint value
       * @param _metadata New metadata value
     */
-    function setMetadataDelegated(address _namespace, bytes32 _list, bytes32 _key, bytes32 _value, bytes calldata _metadata) public isDelegate(_namespace, _list) {
+    function setMetadataDelegated(address _namespace, bytes32 _list, bytes32 _key, bytes32 _value, bytes calldata _metadata) public isDelegate(_namespace, _list) whenNotPaused {
         metadata[generateValueLocationHash(_namespace, _list, _key, _value)] = _metadata;
     }
 

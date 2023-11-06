@@ -85,7 +85,9 @@ contract Sig712Utils {
         SET_LIST_METADATA,
         SET_LIST_METADATA_DELEGATED,
         ADD_LIST_DELEGATE,
-        REMOVE_LIST_DELEGATE
+        REMOVE_LIST_DELEGATE,
+        SET_METADATA,
+        SET_METADATA_DELEGATED
     }
 
     constructor(string memory _contractVersion, address _contractAddress) {
@@ -137,6 +139,10 @@ contract Sig712Utils {
             return keccak256("AddListDelegateSigned(address namespace,bytes32 list,address delegate,uint256 untilTimestamp,address signer,uint256 nonce)");
         } else if (_action == MetaAction.REMOVE_LIST_DELEGATE) {
             return keccak256("RemoveListDelegateSigned(address namespace,bytes32 list,address delegate,address signer,uint256 nonce)");
+        } else if (_action == MetaAction.SET_METADATA) {
+            return keccak256("SetMetadataSigned(address namespace,bytes32 list,bytes32 key,bytes32 value,bytes metadata,address signer,uint256 nonce)");
+        } else if (_action == MetaAction.SET_METADATA_DELEGATED) {
+            return keccak256("SetMetadataDelegatedSigned(address namespace,bytes32 list,bytes32 key,bytes32 value,bytes metadata,address signer,uint256 nonce)");
         }
         revert("Invalid action");
     }
@@ -766,5 +772,81 @@ contract Sig712Utils {
                 getSetHintsMetadataStructHash(_hints, _signer, _nonce)
             )
         );
+    }
+
+    ///////////////  SET METADATA  ///////////////
+
+    /*
+    * @dev Get the struct hash for SetMetadata action
+    * @param _hint HintMetadataEntry
+    * @param _signer Address of signature creator
+    * @param _nonce Nonce of signature creator
+    * @return Hash of the SetMetadata action
+    */
+    function getSetMetadataStructHash(HintMetadataEntry calldata _hint, address _signer, uint _nonce) internal pure returns (bytes32) {
+        return keccak256(abi.encode(
+            getTypeHash(MetaAction.SET_METADATA),
+            _hint.namespace,
+            _hint.list,
+            _hint.key,
+            _hint.value,
+            _hint.metadata,
+            _signer,
+            _nonce
+        ));
+    }
+
+    /*
+    * @dev Get the typed data hash of a SetMetadata action
+    * @param _hint HintMetadataEntry
+    * @param _signer Address of signature creator
+    * @param _nonce Nonce of signature creator
+    * @return Hash of the SetMetadata action
+    */
+    function getSetMetadataTypedDataHash(HintMetadataEntry calldata _hint, address _signer, uint _nonce) public view returns (bytes32) {
+        return
+            keccak256(abi.encodePacked(
+                "\x19\x01",
+                DOMAIN_SEPARATOR,
+                getSetMetadataStructHash(_hint, _signer, _nonce)
+            ));
+    }
+
+    ///////////////  SET METADATA DELEGATED  ///////////////
+
+    /*
+    * @dev Get the struct hash for SetMetadataDelegated action
+    * @param _hint HintMetadataEntry
+    * @param _signer Address of signature creator
+    * @param _nonce Nonce of signature creator
+    * @return Hash of the SetMetadataDelegated action
+    */
+    function getSetMetadataDelegatedStructHash(HintMetadataEntry calldata _hint, address _signer, uint _nonce) internal pure returns (bytes32) {
+        return keccak256(abi.encode(
+            getTypeHash(MetaAction.SET_METADATA_DELEGATED),
+            _hint.namespace,
+            _hint.list,
+            _hint.key,
+            _hint.value,
+            _hint.metadata,
+            _signer,
+            _nonce
+        ));
+    }
+
+    /*
+    * @dev Get the typed data hash of a SetMetadataDelegated action
+    * @param _hint HintMetadataEntry
+    * @param _signer Address of signature creator
+    * @param _nonce Nonce of signature creator
+    * @return Hash of the SetMetadataDelegated action
+    */
+    function getSetMetadataDelegatedTypedDataHash(HintMetadataEntry calldata _hint, address _signer, uint _nonce) public view returns (bytes32) {
+        return
+            keccak256(abi.encodePacked(
+                "\x19\x01",
+                DOMAIN_SEPARATOR,
+                getSetMetadataDelegatedStructHash(_hint, _signer, _nonce)
+            ));
     }
 }
