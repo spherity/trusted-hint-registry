@@ -41,6 +41,22 @@ contract MetadataTest is Test, Events {
         marieAddress = vm.addr(mariePrivateKey);
     }
 
+    // GET HINT
+
+    function test_GetMetadata() public {
+        vm.prank(namespace);
+
+        registry.setMetadata(namespace, list, key, value, metadata);
+
+        assertEq(registry.getMetadata(namespace, list, key, value), metadata);
+    }
+
+    function test_GetMetadataIfNotSet() public {
+        vm.prank(namespace);
+
+        assertEq(registry.getMetadata(namespace, list, key, value), bytes(""));
+    }
+
     // SET HINT WITH METADATA
     function test_SetHintWithMetadata() public {
         vm.prank(namespace);

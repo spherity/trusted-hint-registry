@@ -596,6 +596,18 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
     ///////////////  METADATA  ///////////////
 
     /**
+      * @notice Get metadata
+      * @param _namespace Address namespace
+      * @param _list Bytes32 list identifier
+      * @param _key Bytes32 key identifier for hint value
+      * @param _value Bytes32 value identifier for hint value
+      * @return metadata bytes value
+    */
+    function getMetadata(address _namespace, bytes32 _list, bytes32 _key, bytes32 _value) external view returns (bytes memory) {
+        return metadata[generateValueLocationHash(_namespace, _list, _key, _value)];
+    }
+
+    /**
       * @notice Set metadata
       * @param _namespace Address namespace
       * @param _list Bytes32 list identifier
