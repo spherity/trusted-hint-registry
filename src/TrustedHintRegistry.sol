@@ -50,6 +50,17 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
       *  }
     */
 
+    ///////////////  OCI METHODS  ///////////////
+
+    function isTrustedIssuer(address _ociAddress, string memory _contextUrl, string memory _did) external view returns (bool) {
+        bytes32 list = keccak256(abi.encodePacked(_contextUrl));
+        bytes32 key = keccak256(abi.encodePacked(_did));
+        if (revokedLists[generateListLocationHash(_ociAddress, list)]) {
+            return false;
+        }
+        return hints[_ociAddress][list][key] != bytes32(0);
+    }
+
     ///////////////  HINT MANAGEMENT  ///////////////
 
     /**
