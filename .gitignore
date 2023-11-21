@@ -18,3 +18,4 @@ docs/
 
 # Misc
 .idea/*
+.DS_Store

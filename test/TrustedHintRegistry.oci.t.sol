@@ -16,6 +16,13 @@ contract OCITest is Test, Events {
     address internal marieAddress;
     uint256 internal mariePrivateKey;
 
+    string internal constant IDENTITY_SCHEMA = "https://open-credentialing-initiative.github.io/schemas/credentials/IdentityCredential-v1.0.0.jsonld";
+    string internal constant ATP_SCHEMA = "https://open-credentialing-initiative.github.io/schemas/credentials/DSCSAAuthorityCredential-v1.0.0.jsonld";
+    string internal constant DID = "did:example:123456789abcdefghi";
+
+    bytes32 internal constant BYTES32_TRUE = 0x1000000000000000000000000000000000000000000000000000000000000000;
+    bytes32 internal constant BYTES32_FALSE = 0x0000000000000000000000000000000000000000000000000000000000000000;
+
     function setUp() public {
         // Owner of this contract is address(0)!
         vm.startPrank(address(0));
@@ -32,5 +39,60 @@ contract OCITest is Test, Events {
         peterAddress = vm.rememberKey(peterPrivateKey);
         mariePrivateKey = 1000000000000000001;
         marieAddress = vm.addr(mariePrivateKey);
+    }
+
+    function test_IsTrustedIssuer() public {
+        address namespace = address(1);
+        bytes32 list = keccak256(abi.encodePacked(ATP_SCHEMA));
+        bytes32 key = keccak256(abi.encodePacked(DID));
+
+        vm.startPrank(namespace);
+        registry.setHint(namespace, list, key, BYTES32_TRUE);
+
+        bool result = registry.isTrustedIssuer(namespace, ATP_SCHEMA, DID);
+        assertEq(result, true);
+    }
+
+    function test_IsTrustedIssuer_False() public {
+        address namespace = address(1);
+
+        bool result = registry.isTrustedIssuer(namespace, ATP_SCHEMA, DID);
+        assertEq(result, false);
+    }
+
+    function test_IsTrustedIssuer_False_InvalidSchema() public {
+        address namespace = address(1);
+        bytes32 list = keccak256(abi.encodePacked(ATP_SCHEMA));
+        bytes32 key = keccak256(abi.encodePacked(DID));
+
+        vm.startPrank(namespace);
+        registry.setHint(namespace, list, key, BYTES32_TRUE);
+
+        bool result = registry.isTrustedIssuer(namespace, IDENTITY_SCHEMA, DID);
+        assertEq(result, false);
+    }
+
+    function test_IsTrustedIssuer_False_InvalidDID() public {
+        address namespace = address(1);
+        bytes32 list = keccak256(abi.encodePacked(ATP_SCHEMA));
+        bytes32 key = keccak256(abi.encodePacked(DID));
+
+        vm.startPrank(namespace);
+        registry.setHint(namespace, list, key, BYTES32_TRUE);
+
+        bool result = registry.isTrustedIssuer(namespace, ATP_SCHEMA, "did:wrong:nottrusted");
+        assertEq(result, false);
+    }
+
+    function test_IsTrustedIssuer_False_InvalidNamespace() public {
+        address namespace = address(1);
+        bytes32 list = keccak256(abi.encodePacked(ATP_SCHEMA));
+        bytes32 key = keccak256(abi.encodePacked(DID));
+
+        vm.startPrank(namespace);
+        registry.setHint(namespace, list, key, BYTES32_TRUE);
+
+        bool result = registry.isTrustedIssuer(address(2), ATP_SCHEMA, DID);
+        assertEq(result, false);
     }
 }
