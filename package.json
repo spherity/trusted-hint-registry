@@ -1,5 +1,5 @@
 {
-  "name": "trusted-hint-registry",
+  "name": "@spherity/trusted-hint-registry",
   "version": "1.0.0",
   "description": "A registry for trusted hints base on ERC-7506",
   "type": "module",
@@ -7,6 +7,8 @@
   "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.cts",
+
+  "files": ["index.ts", "/dist"],
 
   "exports": {
     "require": {
