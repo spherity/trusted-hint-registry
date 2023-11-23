@@ -1,0 +1,43 @@
+{
+  "name": "trusted-hint-registry",
+  "version": "1.0.0",
+  "description": "A registry for trusted hints base on ERC-7506",
+  "type": "module",
+
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.cts",
+
+  "exports": {
+    "require": {
+      "types": "./dist/index.d.cts",
+      "default": "./dist/index.cjs"
+    },
+    "import": {
+      "types": "./dist/index.d.mts",
+      "default": "./dist/index.mjs"
+    }
+  },
+
+  "engines": {
+    "node": "^20.9.0",
+    "npm": "^10.1.0"
+  },
+  "scripts": {
+    "build": "pkgroll --src ./"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/spherity/trusted-hint-registry.git"
+  },
+  "author": "Philipp Bolte (Spherity)",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/spherity/trusted-hint-registry/issues"
+  },
+  "homepage": "https://github.com/spherity/trusted-hint-registry#readme",
+  "devDependencies": {
+    "pkgroll": "^2.0.1",
+    "typescript": "^5.2.2"
+  }
+}
