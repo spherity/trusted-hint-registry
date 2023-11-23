@@ -1,66 +1,71 @@
-## Foundry
+## Trusted Hint Registry
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+This repository contains a smart contract for a registry of trusted hints used in decentralized ecosystems based on 
+ERC-7506. It provides a standardized on-chain metadata management system aiding in verification of on- and off-chain 
+data, like Verifiable Credentials.
 
-Foundry consists of:
+### Key Decisions
 
--   **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
--   **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
--   **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
--   **Chisel**: Fast, utilitarian, and verbose solidity REPL.
-
-## Documentation
-
-https://book.getfoundry.sh/
+- Upgradable smart contract using ERC1967 to enable future feature additions and bug fixes.
+- General purpose, access-controlled data structure usable by any address for hints.
+- Development, testing, and deployment is done via the Foundry toolset.
+- The deployments and ABI are provided via an NPM package from this repository.
 
 ## Usage
 
 ### Build
 
 ```shell
-$ forge build
+forge build
 ```
 
 ### Test
 
 ```shell
-$ forge test
-```
-
-### Format
-
-```shell
-$ forge fmt
-```
-
-### Gas Snapshots
-
-```shell
-$ forge snapshot
-```
-
-### Anvil
-
-```shell
-$ anvil
+forge test
 ```
 
 ### Deploy
 
 ```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
+forge script DeployProxy --rpc-url <your_rpc_url> --private-key <your_private_key> --etherscan-api-key <your_etherscan_key> --verify --optimize --broadcast
 ```
+## Usage in other projects
 
-### Cast
+### Install
 
 ```shell
-$ cast <subcommand>
+npm i @spherity/trusted-hint-registry
 ```
 
-### Help
+### Import
 
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
+This package provides separate build for CommonJS and ES modules. You can import it in your project like this:
+
+```typescript
+import { TRUSTED_HINT_REGISTRY_ABI, deployments } from "@spherity/trusted-hint-registry"
 ```
+
+In combination with, e.g., [viem](https://viem.sh/), you can use it like this:
+
+```typescript
+import { TRUSTED_HINT_REGISTRY_ABI, deployments } from "@spherity/trusted-hint-registry";
+import { getContract } from 'viem'
+
+const publicClient = createPublicClient({
+  chain: sepolia,
+  transport: http(),
+})
+
+const sepoliaDeployment = deployments.find(d => d.chainId === 11155111 && d.type === "proxy")
+const contract = getContract({
+  address: sepoliaDeployment.registry,
+  abi: TRUSTED_HINT_REGISTRY_ABI,
+  publicClient,
+})
+
+const namespace = "0x..."
+const list = "0x..."
+const key = "0x..."
+const hint = await contract.read.getHint(namespace, list, key)
+)
