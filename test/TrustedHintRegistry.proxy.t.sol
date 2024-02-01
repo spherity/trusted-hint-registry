@@ -48,9 +48,7 @@ contract ProxyTest is Test {
         // wrap in ABI to support easier calls
         TrustedHintRegistryVX wrappedProxyVX = TrustedHintRegistryVX(address(proxy));
         wrappedProxyVX.updateVersion();
-        console.log("version: %s", wrappedProxy.version());
-        console.log("delimiter: %s", wrappedProxyVX.VERSION_DELIMITER());
-        console.log(wrappedProxyVX.VERSION_MAJOR(), wrappedProxyVX.VERSION_MINOR(), wrappedProxyVX.VERSION_PATCH(), wrappedProxyVX.VERSION_DELIMITER());
+
         (,string memory nameVX, string memory versionVX,, address verifyingContractVX,,) = wrappedProxyVX.eip712Domain();
 
         assertEq(wrappedProxyVX.version(), "1.1.0");

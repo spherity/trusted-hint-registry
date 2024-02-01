@@ -203,7 +203,7 @@ contract Sig712Utils {
             _hint.list,
             _hint.key,
             _hint.value,
-            _hint.metadata,
+            keccak256(_hint.metadata),
             _signer,
             _nonce
         ));
