@@ -114,7 +114,7 @@ contract Sig712Utils {
         } else if (_action == MetaAction.SET_HINTS) {
             return keccak256("SetHintsSigned(address namespace,bytes32 list,bytes32[] keys,bytes32[] values,address signer,uint256 nonce)");
         } else if (_action == MetaAction.SET_HINTS_WITH_METADATA) {
-            return keccak256("SetHintsSigned(address namespace,bytes32 list,bytes32[] keys,bytes32[] values,bytes[] _metadata,address signer,uint256 nonce)");
+            return keccak256("SetHintsSigned(address namespace,bytes32 list,bytes32[] keys,bytes32[] values,bytes[] metadata,address signer,uint256 nonce)");
         } else if (_action == MetaAction.SET_HINT_METADATA) {
             return keccak256("SetHintMetadataSigned(address namespace,bytes32 list,bytes32 key,bytes32 value,bytes metadata,address signer,uint256 nonce)");
         } else if (_action == MetaAction.SET_HINT_METADATA_DELEGATED) {
@@ -123,10 +123,10 @@ contract Sig712Utils {
             return keccak256("SetHintDelegatedSigned(address namespace,bytes32 list,bytes32 key,bytes32 value,address signer,uint256 nonce)");
         } else if (_action == MetaAction.SET_HINT_DELEGATED_WITH_METADATA) {
             return keccak256("SetHintDelegatedSigned(address namespace,bytes32 list,bytes32 key,bytes32 value,bytes metadata,address signer,uint256 nonce)");
-        }  else if (_action == MetaAction.SET_HINTS_DELEGATED) {
+        } else if (_action == MetaAction.SET_HINTS_DELEGATED) {
             return keccak256("SetHintsDelegatedSigned(address namespace,bytes32 list,bytes32[] keys,bytes32[] values,address signer,uint256 nonce)");
         } else if (_action == MetaAction.SET_HINTS_DELEGATED_WITH_METADATA) {
-            return keccak256("SetHintsDelegatedSigned(address namespace,bytes32 list,bytes32[] keys,bytes32[] values, bytes[] _metadata,address signer,uint256 nonce)");
+            return keccak256("SetHintsDelegatedSigned(address namespace,bytes32 list,bytes32[] keys,bytes32[] values, bytes[] metadata,address signer,uint256 nonce)");
         } else if (_action == MetaAction.SET_LIST_STATUS) {
             return keccak256("SetListStatusSigned(address namespace,bytes32 list,bool revoked,address signer,uint256 nonce)");
         } else if (_action == MetaAction.SET_LIST_OWNER) {
@@ -203,7 +203,7 @@ contract Sig712Utils {
             _hint.list,
             _hint.key,
             _hint.value,
-            _hint.metadata,
+            keccak256(_hint.metadata),
             _signer,
             _nonce
         ));
@@ -394,13 +394,18 @@ contract Sig712Utils {
     * @return Hash of the SetHintDelegatedWithMetadata action
     */
     function getSetHintsDelegatedWithMetadataStructHash(HintMetadataEntries calldata _hints, address _signer, uint _nonce) internal pure returns (bytes32) {
+        bytes32[] memory encodedMetadata = new bytes32[](_hints.metadata.length);
+        for (uint i = 0; i < _hints.metadata.length; i++) {
+            // Encode each metadata item
+            encodedMetadata[i] = keccak256(_hints.metadata[i]);
+        }
         return keccak256(abi.encode(
             getTypeHash(MetaAction.SET_HINTS_DELEGATED_WITH_METADATA),
             _hints.namespace,
             _hints.list,
             keccak256(abi.encodePacked(_hints.keys)),
             keccak256(abi.encodePacked(_hints.values)),
-            keccak256(abi.encode(_hints.metadata)),
+            keccak256(abi.encodePacked(encodedMetadata)),
             _signer,
             _nonce
         ));
@@ -744,13 +749,18 @@ contract Sig712Utils {
     * @return Hash of the SetHintsMetadata action
     */
     function getSetHintsMetadataStructHash(HintMetadataEntries calldata _hints, address _signer, uint _nonce) internal pure returns (bytes32) {
+        bytes32[] memory encodedMetadata = new bytes32[](_hints.metadata.length);
+        for (uint i = 0; i < _hints.metadata.length; i++) {
+            // Encode each metadata item
+            encodedMetadata[i] = keccak256(_hints.metadata[i]);
+        }
         return keccak256(abi.encode(
             getTypeHash(MetaAction.SET_HINTS_WITH_METADATA),
             _hints.namespace,
             _hints.list,
             keccak256(abi.encodePacked(_hints.keys)),
             keccak256(abi.encodePacked(_hints.values)),
-            keccak256(abi.encode(_hints.metadata)),
+            keccak256(abi.encodePacked(encodedMetadata)),
             _signer,
             _nonce
         ));
