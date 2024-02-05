@@ -328,7 +328,7 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
             _list,
             _key,
             _value,
-            _metadata,
+            keccak256(_metadata),
             _signer,
             nonces[_signer]
         )));
