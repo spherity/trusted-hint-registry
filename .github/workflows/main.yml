@@ -34,13 +34,13 @@ jobs:
       - name: Run coverage
         run: forge coverage
 
-  upgrade_sepolia_on_release_tag:
-    name: Upgrade
-    if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
-    needs: [ test ]
-    uses: ./.github/workflows/upgrade_sepolia.yml
-    secrets:
-      RPC_URL: ${{ secrets.RPC_URL }}
-      ETH_PRIVATE_KEY: ${{ secrets.ETH_PRIVATE_KEY }}
-      ETH_PROXY_ADDRESS: ${{ secrets.ETH_PROXY_ADDRESS }}
-      ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
+#  upgrade_sepolia_on_release_tag:
+#    name: Upgrade
+#    if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
+#    needs: [ test ]
+#    uses: ./.github/workflows/upgrade_sepolia.yml
+#    secrets:
+#      RPC_URL: ${{ secrets.RPC_URL }}
+#      ETH_PRIVATE_KEY: ${{ secrets.ETH_PRIVATE_KEY }}
+#      ETH_PROXY_ADDRESS: ${{ secrets.ETH_PROXY_ADDRESS }}
+#      ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
