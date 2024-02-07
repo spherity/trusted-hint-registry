@@ -8,8 +8,8 @@ export type TrustedHintRegistryDeployment = {
 }
 
 export const deployments: TrustedHintRegistryDeployment[] = [
-  { chainId: 11155111, registry: '0x80F5ed34372dBb855f03d9F1D151a9DBc6450b87', type: "proxy", name: 'sepolia' },
-  { chainId: 11155111, registry: '0x21B5926c81ea01f4aDd17c08516dcEC75c38cF3f', type: "logic", name: 'sepolia' },
+  { chainId: 11155111, registry: '0x3a93b80e586A24373BC2394269aED10A77ef4cB2', type: "proxy", name: 'sepolia' },
+  { chainId: 11155111, registry: '0x158b6823b7D5225f9B250389bd44d4077046D608', type: "logic", name: 'sepolia' },
 ]
 
 export const TRUSTED_HINT_REGISTRY_ABI = [

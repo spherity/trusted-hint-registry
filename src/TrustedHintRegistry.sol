@@ -403,7 +403,7 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
             hashedMetadata[i] = keccak256(_metadata[i]);
         }
         bytes32 hash = _hashTypedDataV4(keccak256(abi.encode(
-            keccak256("SetHintsDelegatedSigned(address namespace,bytes32 list,bytes32[] keys,bytes32[] values, bytes[] metadata,address signer,uint256 nonce)"),
+            keccak256("SetHintsDelegatedSigned(address namespace,bytes32 list,bytes32[] keys,bytes32[] values,bytes[] metadata,address signer,uint256 nonce)"),
             _namespace,
             _list,
             keccak256(abi.encodePacked(_keys)),
@@ -644,7 +644,7 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
             _list,
             _key,
             _value,
-            _metadata,
+            keccak256(_metadata),
             _signer,
             nonce
         )));
@@ -684,7 +684,7 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
             _list,
             _key,
             _value,
-            _metadata,
+            keccak256(_metadata),
             _signer,
             nonces[_signer]
         )));
