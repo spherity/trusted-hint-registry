@@ -126,7 +126,7 @@ contract Sig712Utils {
         } else if (_action == MetaAction.SET_HINTS_DELEGATED) {
             return keccak256("SetHintsDelegatedSigned(address namespace,bytes32 list,bytes32[] keys,bytes32[] values,address signer,uint256 nonce)");
         } else if (_action == MetaAction.SET_HINTS_DELEGATED_WITH_METADATA) {
-            return keccak256("SetHintsDelegatedSigned(address namespace,bytes32 list,bytes32[] keys,bytes32[] values, bytes[] metadata,address signer,uint256 nonce)");
+            return keccak256("SetHintsDelegatedSigned(address namespace,bytes32 list,bytes32[] keys,bytes32[] values,bytes[] metadata,address signer,uint256 nonce)");
         } else if (_action == MetaAction.SET_LIST_STATUS) {
             return keccak256("SetListStatusSigned(address namespace,bytes32 list,bool revoked,address signer,uint256 nonce)");
         } else if (_action == MetaAction.SET_LIST_OWNER) {
@@ -800,7 +800,7 @@ contract Sig712Utils {
             _hint.list,
             _hint.key,
             _hint.value,
-            _hint.metadata,
+            keccak256(_hint.metadata),
             _signer,
             _nonce
         ));
@@ -838,7 +838,7 @@ contract Sig712Utils {
             _hint.list,
             _hint.key,
             _hint.value,
-            _hint.metadata,
+            keccak256(_hint.metadata),
             _signer,
             _nonce
         ));
