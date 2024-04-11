@@ -163,8 +163,9 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
     */
     function _setHints(address _namespace, bytes32 _list, bytes32[] calldata _keys, bytes32[] calldata _values) private {
         uint256 length = _keys.length;
-        for(uint256 i; i < length; i++) {
+        for(uint256 i; i < length;) {
             _setHint(_namespace, _list, _keys[i], _values[i]);
+            unchecked { i++; }
         }
     }
 
@@ -177,9 +178,10 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
     */
     function _setHints(address _namespace, bytes32 _list, bytes32[] calldata _keys, bytes32[] calldata _values, bytes[] calldata _metadata) private {
         uint256 length = _keys.length;
-        for(uint256 i; i < length; i++) {
+        for(uint256 i; i < length;) {
             _setHint(_namespace, _list, _keys[i], _values[i]);
             metadata[generateValueLocationHash(_namespace, _list, _keys[i], _values[i])] = _metadata[i];
+            unchecked { i++; }
         }
     }
 
@@ -245,8 +247,9 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
     function setHintsSigned(address _namespace, bytes32 _list, bytes32[] calldata _keys, bytes32[] calldata _values, bytes[] calldata _metadata, address _signer, bytes calldata _signature) external whenNotPaused {
         bytes32[] memory hashedMetadata = new bytes32[](_metadata.length);
         uint256 length = _metadata.length;
-        for(uint256 i; i < length; i++) {
+        for(uint256 i; i < length;) {
             hashedMetadata[i] = keccak256(_metadata[i]);
+            unchecked { i++; }
         }
         bytes32 hash = _hashTypedDataV4(keccak256(abi.encode(
             keccak256("SetHintsSigned(address namespace,bytes32 list,bytes32[] keys,bytes32[] values,bytes[] metadata,address signer,uint256 nonce)"),
@@ -404,8 +407,9 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
     function setHintsDelegatedSigned(address _namespace, bytes32 _list, bytes32[] calldata _keys, bytes32[] calldata _values, bytes[] calldata _metadata, address _signer, bytes calldata _signature) external whenNotPaused {
         bytes32[] memory hashedMetadata = new bytes32[](_metadata.length);
         uint256 length = _metadata.length;
-        for(uint256 i; i < length; i++) {
+        for(uint256 i; i < length;) {
             hashedMetadata[i] = keccak256(_metadata[i]);
+            unchecked { i++; }
         }
         bytes32 hash = _hashTypedDataV4(keccak256(abi.encode(
             keccak256("SetHintsDelegatedSigned(address namespace,bytes32 list,bytes32[] keys,bytes32[] values,bytes[] metadata,address signer,uint256 nonce)"),
