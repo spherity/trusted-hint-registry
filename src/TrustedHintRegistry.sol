@@ -10,12 +10,12 @@ import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgradeable, OwnableUpgradeable, UUPSUpgradeable {
-    mapping(address => mapping(bytes32 => mapping(bytes32 => bytes32))) hints;
-    mapping(bytes32 => mapping(address => uint256)) public delegates;
-    mapping(bytes32 => address) public newOwners;
-    mapping(address => uint256) public nonces;
-    mapping(bytes32 => bool) public revokedLists;
-    mapping(bytes32 => bytes) public metadata;
+    mapping(address namespace => mapping(bytes32 list => mapping(bytes32 key => bytes32 value))) hints;
+    mapping(bytes32 listLocation => mapping(address delegate => uint256 validUntil)) public delegates;
+    mapping(bytes32 listLocation => address newOwner) public newOwners;
+    mapping(address signer => uint256 nonce) public nonces;
+    mapping(bytes32 listLocation => bool revoked) public revokedLists;
+    mapping(bytes32 valueLocation => bytes metadata) public metadata;
 
     string public VERSION_MAJOR;
     string public VERSION_MINOR;
@@ -161,7 +161,7 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
       * @param _values List of new bytes32 hint values
     */
     function _setHints(address _namespace, bytes32 _list, bytes32[] calldata _keys, bytes32[] calldata _values) private {
-        for (uint i = 0; i < _keys.length; i++) {
+        for (uint256 i = 0; i < _keys.length; i++) {
             _setHint(_namespace, _list, _keys[i], _values[i]);
         }
     }
@@ -174,7 +174,7 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
       * @param _values List of new bytes32 hint values
     */
     function _setHints(address _namespace, bytes32 _list, bytes32[] calldata _keys, bytes32[] calldata _values, bytes[] calldata _metadata) private {
-        for (uint i = 0; i < _keys.length; i++) {
+        for (uint256 i = 0; i < _keys.length; i++) {
             _setHint(_namespace, _list, _keys[i], _values[i]);
             metadata[generateValueLocationHash(_namespace, _list, _keys[i], _values[i])] = _metadata[i];
         }
@@ -241,7 +241,7 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
     */
     function setHintsSigned(address _namespace, bytes32 _list, bytes32[] calldata _keys, bytes32[] calldata _values, bytes[] calldata _metadata, address _signer, bytes calldata _signature) external whenNotPaused {
         bytes32[] memory hashedMetadata = new bytes32[](_metadata.length);
-        for (uint i = 0; i < _metadata.length; i++) {
+        for (uint256 i = 0; i < _metadata.length; i++) {
             hashedMetadata[i] = keccak256(_metadata[i]);
         }
         bytes32 hash = _hashTypedDataV4(keccak256(abi.encode(
@@ -399,7 +399,7 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
     */
     function setHintsDelegatedSigned(address _namespace, bytes32 _list, bytes32[] calldata _keys, bytes32[] calldata _values, bytes[] calldata _metadata, address _signer, bytes calldata _signature) external whenNotPaused {
         bytes32[] memory hashedMetadata = new bytes32[](_metadata.length);
-        for (uint i = 0; i < _metadata.length; i++) {
+        for (uint256 i = 0; i < _metadata.length; i++) {
             hashedMetadata[i] = keccak256(_metadata[i]);
         }
         bytes32 hash = _hashTypedDataV4(keccak256(abi.encode(
@@ -637,7 +637,7 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
       * @param _signature Raw signature created according to EIP-712
     */
     function setMetadataSigned(address _namespace, bytes32 _list, bytes32 _key, bytes32 _value, bytes calldata _metadata, address _signer, bytes calldata _signature) external whenNotPaused {
-        uint nonce = nonces[_signer];
+        uint256 nonce = nonces[_signer];
         bytes32 hash = _hashTypedDataV4(keccak256(abi.encode(
             keccak256("SetMetadataSigned(address namespace,bytes32 list,bytes32 key,bytes32 value,bytes metadata,address signer,uint256 nonce)"),
             _namespace,
