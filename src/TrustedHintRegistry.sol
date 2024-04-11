@@ -9,6 +9,7 @@ import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/I
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
+/// @custom:security-contact info@spherity.com
 contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgradeable, OwnableUpgradeable, UUPSUpgradeable {
     mapping(address namespace => mapping(bytes32 list => mapping(bytes32 key => bytes32 value))) hints;
     mapping(bytes32 listLocation => mapping(address delegate => uint256 validUntil)) public delegates;
@@ -161,7 +162,8 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
       * @param _values List of new bytes32 hint values
     */
     function _setHints(address _namespace, bytes32 _list, bytes32[] calldata _keys, bytes32[] calldata _values) private {
-        for (uint256 i; i < _keys.length; i++) {
+        uint256 length = _keys.length;
+        for(uint256 i; i < length; i++) {
             _setHint(_namespace, _list, _keys[i], _values[i]);
         }
     }
@@ -174,7 +176,8 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
       * @param _values List of new bytes32 hint values
     */
     function _setHints(address _namespace, bytes32 _list, bytes32[] calldata _keys, bytes32[] calldata _values, bytes[] calldata _metadata) private {
-        for (uint256 i; i < _keys.length; i++) {
+        uint256 length = _keys.length;
+        for(uint256 i; i < length; i++) {
             _setHint(_namespace, _list, _keys[i], _values[i]);
             metadata[generateValueLocationHash(_namespace, _list, _keys[i], _values[i])] = _metadata[i];
         }
@@ -241,7 +244,8 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
     */
     function setHintsSigned(address _namespace, bytes32 _list, bytes32[] calldata _keys, bytes32[] calldata _values, bytes[] calldata _metadata, address _signer, bytes calldata _signature) external whenNotPaused {
         bytes32[] memory hashedMetadata = new bytes32[](_metadata.length);
-        for (uint256 i; i < _metadata.length; i++) {
+        uint256 length = _metadata.length;
+        for(uint256 i; i < length; i++) {
             hashedMetadata[i] = keccak256(_metadata[i]);
         }
         bytes32 hash = _hashTypedDataV4(keccak256(abi.encode(
@@ -399,7 +403,8 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
     */
     function setHintsDelegatedSigned(address _namespace, bytes32 _list, bytes32[] calldata _keys, bytes32[] calldata _values, bytes[] calldata _metadata, address _signer, bytes calldata _signature) external whenNotPaused {
         bytes32[] memory hashedMetadata = new bytes32[](_metadata.length);
-        for (uint256 i; i < _metadata.length; i++) {
+        uint256 length = _metadata.length;
+        for(uint256 i; i < length; i++) {
             hashedMetadata[i] = keccak256(_metadata[i]);
         }
         bytes32 hash = _hashTypedDataV4(keccak256(abi.encode(
