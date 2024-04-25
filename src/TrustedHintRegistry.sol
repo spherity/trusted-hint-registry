@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity >=0.8.0 <0.9.0;
+pragma solidity ^0.8.2;
 
 import { EIP712Upgradeable } from "@openzeppelin/contracts-upgradeable/utils/cryptography/EIP712Upgradeable.sol";
 import { ECDSAUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
@@ -9,13 +9,14 @@ import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/I
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
+/// @custom:security-contact info@spherity.com
 contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgradeable, OwnableUpgradeable, UUPSUpgradeable {
-    mapping(address => mapping(bytes32 => mapping(bytes32 => bytes32))) hints;
-    mapping(bytes32 => mapping(address => uint256)) public delegates;
-    mapping(bytes32 => address) public newOwners;
-    mapping(address => uint256) public nonces;
-    mapping(bytes32 => bool) public revokedLists;
-    mapping(bytes32 => bytes) public metadata;
+    mapping(address namespace => mapping(bytes32 list => mapping(bytes32 key => bytes32 value))) hints;
+    mapping(bytes32 listLocation => mapping(address delegate => uint256 validUntil)) public delegates;
+    mapping(bytes32 listLocation => address newOwner) public newOwners;
+    mapping(address signer => uint256 nonce) public nonces;
+    mapping(bytes32 listLocation => bool revoked) public revokedLists;
+    mapping(bytes32 valueLocation => bytes metadata) public metadata;
 
     string public VERSION_MAJOR;
     string public VERSION_MINOR;
@@ -71,7 +72,7 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
       * @param _value New bytes32 hint value
     */
 
-    function _setHint(address _namespace, bytes32 _list, bytes32 _key, bytes32 _value) internal {
+    function _setHint(address _namespace, bytes32 _list, bytes32 _key, bytes32 _value) private {
         hints[_namespace][_list][_key] = _value;
         emit HintValueChanged(_namespace, _list, _key, _value);
     }
@@ -83,7 +84,7 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
       * @param _key Bytes32 key identifier for hint value
       * @param _value New bytes32 hint value
     */
-    function setHint(address _namespace, bytes32 _list, bytes32 _key, bytes32 _value) public isOwner(_namespace, _list) whenNotPaused {
+    function setHint(address _namespace, bytes32 _list, bytes32 _key, bytes32 _value) external isOwner(_namespace, _list) whenNotPaused {
         _setHint(_namespace, _list, _key, _value);
     }
 
@@ -95,7 +96,7 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
       * @param _value New bytes32 hint value
       * @param _metadata New metdata value
     */
-    function setHint(address _namespace, bytes32 _list, bytes32 _key, bytes32 _value, bytes calldata _metadata) public isOwner(_namespace, _list) whenNotPaused {
+    function setHint(address _namespace, bytes32 _list, bytes32 _key, bytes32 _value, bytes calldata _metadata) external isOwner(_namespace, _list) whenNotPaused {
         _setHint(_namespace, _list, _key, _value);
         metadata[generateValueLocationHash(_namespace, _list, _key, _value)] = _metadata;
     }
@@ -109,7 +110,7 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
       * @param _signer Address of signature creator
       * @param _signature Raw signature created according to EIP-712
     */
-    function setHintSigned(address _namespace, bytes32 _list, bytes32 _key, bytes32 _value, address _signer, bytes calldata _signature) public whenNotPaused {
+    function setHintSigned(address _namespace, bytes32 _list, bytes32 _key, bytes32 _value, address _signer, bytes calldata _signature) external whenNotPaused {
         bytes32 hash = _hashTypedDataV4(keccak256(abi.encode(
             keccak256("SetHintSigned(address namespace,bytes32 list,bytes32 key,bytes32 value,address signer,uint256 nonce)"),
             _namespace,
@@ -135,7 +136,7 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
       * @param _signer Address of signature creator
       * @param _signature Raw signature created according to EIP-712
     */
-    function setHintSigned(address _namespace, bytes32 _list, bytes32 _key, bytes32 _value, bytes calldata _metadata, address _signer, bytes calldata _signature) public whenNotPaused {
+    function setHintSigned(address _namespace, bytes32 _list, bytes32 _key, bytes32 _value, bytes calldata _metadata, address _signer, bytes calldata _signature) external whenNotPaused {
         bytes32 hash = _hashTypedDataV4(keccak256(abi.encode(
             keccak256("SetHintSigned(address namespace,bytes32 list,bytes32 key,bytes32 value,bytes metadata,address signer,uint256 nonce)"),
             _namespace,
@@ -160,9 +161,11 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
       * @param _keys List of bytes32 key identifiers
       * @param _values List of new bytes32 hint values
     */
-    function _setHints(address _namespace, bytes32 _list, bytes32[] calldata _keys, bytes32[] calldata _values) internal {
-        for (uint i = 0; i < _keys.length; i++) {
+    function _setHints(address _namespace, bytes32 _list, bytes32[] calldata _keys, bytes32[] calldata _values) private {
+        uint256 length = _keys.length;
+        for(uint256 i; i < length;) {
             _setHint(_namespace, _list, _keys[i], _values[i]);
+            unchecked { i++; }
         }
     }
 
@@ -173,10 +176,12 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
       * @param _keys List of bytes32 key identifiers
       * @param _values List of new bytes32 hint values
     */
-    function _setHints(address _namespace, bytes32 _list, bytes32[] calldata _keys, bytes32[] calldata _values, bytes[] calldata _metadata) internal {
-        for (uint i = 0; i < _keys.length; i++) {
+    function _setHints(address _namespace, bytes32 _list, bytes32[] calldata _keys, bytes32[] calldata _values, bytes[] calldata _metadata) private {
+        uint256 length = _keys.length;
+        for(uint256 i; i < length;) {
             _setHint(_namespace, _list, _keys[i], _values[i]);
             metadata[generateValueLocationHash(_namespace, _list, _keys[i], _values[i])] = _metadata[i];
+            unchecked { i++; }
         }
     }
 
@@ -188,7 +193,7 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
       * @param _keys List of bytes32 key identifiers
       * @param _values List of new bytes32 hint values
     */
-    function setHints(address _namespace, bytes32 _list, bytes32[] calldata _keys, bytes32[] calldata _values) public isOwner(_namespace, _list) whenNotPaused {
+    function setHints(address _namespace, bytes32 _list, bytes32[] calldata _keys, bytes32[] calldata _values) external isOwner(_namespace, _list) whenNotPaused {
         _setHints(_namespace, _list, _keys, _values);
     }
 
@@ -200,7 +205,7 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
       * @param _values List of new bytes32 hint values
       * @param _metadata List of new metadata values
     */
-    function setHints(address _namespace, bytes32 _list, bytes32[] calldata _keys, bytes32[] calldata _values, bytes[] calldata _metadata) public isOwner(_namespace, _list) whenNotPaused {
+    function setHints(address _namespace, bytes32 _list, bytes32[] calldata _keys, bytes32[] calldata _values, bytes[] calldata _metadata) external isOwner(_namespace, _list) whenNotPaused {
         _setHints(_namespace, _list, _keys, _values, _metadata);
     }
 
@@ -213,7 +218,7 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
       * @param _signer Address of signature creator
       * @param _signature Raw signature created according to EIP-712
     */
-    function setHintsSigned(address _namespace, bytes32 _list, bytes32[] calldata _keys, bytes32[] calldata _values, address _signer, bytes calldata _signature) public whenNotPaused {
+    function setHintsSigned(address _namespace, bytes32 _list, bytes32[] calldata _keys, bytes32[] calldata _values, address _signer, bytes calldata _signature) external whenNotPaused {
         bytes32 hash = _hashTypedDataV4(keccak256(abi.encode(
             keccak256("SetHintsSigned(address namespace,bytes32 list,bytes32[] keys,bytes32[] values,address signer,uint256 nonce)"),
             _namespace,
@@ -239,10 +244,12 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
       * @param _signer Address of signature creator
       * @param _signature Raw signature created according to EIP-712
     */
-    function setHintsSigned(address _namespace, bytes32 _list, bytes32[] calldata _keys, bytes32[] calldata _values, bytes[] calldata _metadata, address _signer, bytes calldata _signature) public whenNotPaused {
+    function setHintsSigned(address _namespace, bytes32 _list, bytes32[] calldata _keys, bytes32[] calldata _values, bytes[] calldata _metadata, address _signer, bytes calldata _signature) external whenNotPaused {
         bytes32[] memory hashedMetadata = new bytes32[](_metadata.length);
-        for (uint i = 0; i < _metadata.length; i++) {
+        uint256 length = _metadata.length;
+        for(uint256 i; i < length;) {
             hashedMetadata[i] = keccak256(_metadata[i]);
+            unchecked { i++; }
         }
         bytes32 hash = _hashTypedDataV4(keccak256(abi.encode(
             keccak256("SetHintsSigned(address namespace,bytes32 list,bytes32[] keys,bytes32[] values,bytes[] metadata,address signer,uint256 nonce)"),
@@ -269,7 +276,7 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
       * @param _key Bytes32 key identifier for hint value
       * @param _value New bytes32 hint value
     */
-    function setHintDelegated(address _namespace, bytes32 _list, bytes32 _key, bytes32 _value) public isDelegate(_namespace, _list) whenNotPaused {
+    function setHintDelegated(address _namespace, bytes32 _list, bytes32 _key, bytes32 _value) external isDelegate(_namespace, _list) whenNotPaused {
         _setHint(_namespace, _list, _key, _value);
     }
 
@@ -281,7 +288,7 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
       * @param _value New bytes32 hint value
       * @param _metadata New metadata value
     */
-    function setHintDelegated(address _namespace, bytes32 _list, bytes32 _key, bytes32 _value, bytes calldata _metadata) public isDelegate(_namespace, _list) whenNotPaused {
+    function setHintDelegated(address _namespace, bytes32 _list, bytes32 _key, bytes32 _value, bytes calldata _metadata) external isDelegate(_namespace, _list) whenNotPaused {
         _setHint(_namespace, _list, _key, _value);
         metadata[generateValueLocationHash(_namespace, _list, _key, _value)] = _metadata;
     }
@@ -295,7 +302,7 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
       * @param _signer Address of signature creator
       * @param _signature Raw signature created according to EIP-712
     */
-    function setHintDelegatedSigned(address _namespace, bytes32 _list, bytes32 _key, bytes32 _value, address _signer, bytes calldata _signature) public whenNotPaused {
+    function setHintDelegatedSigned(address _namespace, bytes32 _list, bytes32 _key, bytes32 _value, address _signer, bytes calldata _signature) external whenNotPaused {
         bytes32 hash = _hashTypedDataV4(keccak256(abi.encode(
             keccak256("SetHintDelegatedSigned(address namespace,bytes32 list,bytes32 key,bytes32 value,address signer,uint256 nonce)"),
             _namespace,
@@ -321,7 +328,7 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
       * @param _signer Address of signature creator
       * @param _signature Raw signature created according to EIP-712
     */
-    function setHintDelegatedSigned(address _namespace, bytes32 _list, bytes32 _key, bytes32 _value, bytes calldata _metadata, address _signer, bytes calldata _signature) public whenNotPaused {
+    function setHintDelegatedSigned(address _namespace, bytes32 _list, bytes32 _key, bytes32 _value, bytes calldata _metadata, address _signer, bytes calldata _signature) external whenNotPaused {
         bytes32 hash = _hashTypedDataV4(keccak256(abi.encode(
             keccak256("SetHintDelegatedSigned(address namespace,bytes32 list,bytes32 key,bytes32 value,bytes metadata,address signer,uint256 nonce)"),
             _namespace,
@@ -346,7 +353,7 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
       * @param _keys List of bytes32 key identifiers
       * @param _values List of new bytes32 hint values
     */
-    function setHintsDelegated(address _namespace, bytes32 _list, bytes32[] calldata _keys, bytes32[] calldata _values) public isDelegate(_namespace, _list) whenNotPaused {
+    function setHintsDelegated(address _namespace, bytes32 _list, bytes32[] calldata _keys, bytes32[] calldata _values) external isDelegate(_namespace, _list) whenNotPaused {
         _setHints(_namespace, _list, _keys, _values);
     }
 
@@ -358,7 +365,7 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
       * @param _values List of new bytes32 hint values
       * @param _metadata List of new metadata values
     */
-    function setHintsDelegated(address _namespace, bytes32 _list, bytes32[] calldata _keys, bytes32[] calldata _values, bytes[] calldata _metadata) public isDelegate(_namespace, _list) whenNotPaused {
+    function setHintsDelegated(address _namespace, bytes32 _list, bytes32[] calldata _keys, bytes32[] calldata _values, bytes[] calldata _metadata) external isDelegate(_namespace, _list) whenNotPaused {
         _setHints(_namespace, _list, _keys, _values, _metadata);
     }
 
@@ -371,7 +378,7 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
       * @param _signer Address of signature creator
       * @param _signature Raw signature created according to EIP-712
     */
-    function setHintsDelegatedSigned(address _namespace, bytes32 _list, bytes32[] calldata _keys, bytes32[] calldata _values, address _signer, bytes calldata _signature) public whenNotPaused {
+    function setHintsDelegatedSigned(address _namespace, bytes32 _list, bytes32[] calldata _keys, bytes32[] calldata _values, address _signer, bytes calldata _signature) external whenNotPaused {
         bytes32 hash = _hashTypedDataV4(keccak256(abi.encode(
             keccak256("SetHintsDelegatedSigned(address namespace,bytes32 list,bytes32[] keys,bytes32[] values,address signer,uint256 nonce)"),
             _namespace,
@@ -397,10 +404,12 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
       * @param _signer Address of signature creator
       * @param _signature Raw signature created according to EIP-712
     */
-    function setHintsDelegatedSigned(address _namespace, bytes32 _list, bytes32[] calldata _keys, bytes32[] calldata _values, bytes[] calldata _metadata, address _signer, bytes calldata _signature) public whenNotPaused {
+    function setHintsDelegatedSigned(address _namespace, bytes32 _list, bytes32[] calldata _keys, bytes32[] calldata _values, bytes[] calldata _metadata, address _signer, bytes calldata _signature) external whenNotPaused {
         bytes32[] memory hashedMetadata = new bytes32[](_metadata.length);
-        for (uint i = 0; i < _metadata.length; i++) {
+        uint256 length = _metadata.length;
+        for(uint256 i; i < length;) {
             hashedMetadata[i] = keccak256(_metadata[i]);
+            unchecked { i++; }
         }
         bytes32 hash = _hashTypedDataV4(keccak256(abi.encode(
             keccak256("SetHintsDelegatedSigned(address namespace,bytes32 list,bytes32[] keys,bytes32[] values,bytes[] metadata,address signer,uint256 nonce)"),
@@ -426,7 +435,7 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
       * @param _list Bytes32 list identifier
       * @param _revoked New status of hint list
     */
-    function _setListStatus(address _namespace, bytes32 _list, bool _revoked) internal {
+    function _setListStatus(address _namespace, bytes32 _list, bool _revoked) private {
         revokedLists[generateListLocationHash(_namespace, _list)] = _revoked;
         emit HintListStatusChanged(_namespace, _list, true);
     }
@@ -437,7 +446,7 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
       * @param _list Bytes32 list identifier
       * @param _revoked New status of hint list
     */
-    function setListStatus(address _namespace, bytes32 _list, bool _revoked) public isOwner(_namespace, _list) whenNotPaused {
+    function setListStatus(address _namespace, bytes32 _list, bool _revoked) external isOwner(_namespace, _list) whenNotPaused {
         _setListStatus(_namespace, _list, _revoked);
     }
 
@@ -449,7 +458,7 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
       * @param _signer Address of signature creator
       * @param _signature Raw signature created according to EIP-712
     */
-    function setListStatusSigned(address _namespace, bytes32 _list, bool _revoked, address _signer, bytes calldata _signature) public whenNotPaused {
+    function setListStatusSigned(address _namespace, bytes32 _list, bool _revoked, address _signer, bytes calldata _signature) external whenNotPaused {
         bytes32 hash = _hashTypedDataV4(keccak256(abi.encode(
             keccak256("SetListStatusSigned(address namespace,bytes32 list,bool revoked,address signer,uint256 nonce)"),
             _namespace,
@@ -470,7 +479,7 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
       * @param _list Bytes32 list identifier
       * @param _newOwner Address of new owner
     */
-    function _setListOwner(address _namespace, bytes32 _list, address _newOwner) internal {
+    function _setListOwner(address _namespace, bytes32 _list, address _newOwner) private {
         newOwners[generateListLocationHash(_namespace, _list)] = _newOwner;
         emit HintListOwnerChanged(_namespace, _list, _newOwner);
     }
@@ -481,7 +490,7 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
       * @param _list Bytes32 list identifier
       * @param _newOwner Address of new owner
     */
-    function setListOwner(address _namespace, bytes32 _list, address _newOwner) public isOwner(_namespace, _list) whenNotPaused {
+    function setListOwner(address _namespace, bytes32 _list, address _newOwner) external isOwner(_namespace, _list) whenNotPaused {
         _setListOwner(_namespace, _list, _newOwner);
     }
 
@@ -493,7 +502,7 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
       * @param _signer Address of signature creator
       * @param _signature Raw signature created according to EIP-712
     */
-    function setListOwnerSigned(address _namespace, bytes32 _list, address _newOwner, address _signer, bytes calldata _signature) public whenNotPaused {
+    function setListOwnerSigned(address _namespace, bytes32 _list, address _newOwner, address _signer, bytes calldata _signature) external whenNotPaused {
         bytes32 hash = _hashTypedDataV4(keccak256(abi.encode(
             keccak256("SetListOwnerSigned(address namespace,bytes32 list,address newOwner,address signer,uint256 nonce)"),
             _namespace,
@@ -515,7 +524,7 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
       * @param _delegate Address of new delegate
       * @param _untilTimestamp Timestamp until which the delegate is valid
     */
-    function _addListDelegate(address _namespace, bytes32 _list, address _delegate, uint256 _untilTimestamp) internal {
+    function _addListDelegate(address _namespace, bytes32 _list, address _delegate, uint256 _untilTimestamp) private {
         require(_untilTimestamp > block.timestamp, "Timestamp must be in the future");
         delegates[generateListLocationHash(_namespace, _list)][_delegate] = _untilTimestamp;
         emit HintListDelegateAdded(_namespace, _list, _delegate);
@@ -528,7 +537,7 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
       * @param _delegate Address of new delegate
       * @param _untilTimestamp Timestamp until which the delegate is valid
     */
-    function addListDelegate(address _namespace, bytes32 _list, address _delegate, uint256 _untilTimestamp) public isOwner(_namespace, _list) whenNotPaused {
+    function addListDelegate(address _namespace, bytes32 _list, address _delegate, uint256 _untilTimestamp) external isOwner(_namespace, _list) whenNotPaused {
         _addListDelegate(_namespace, _list, _delegate, _untilTimestamp);
     }
 
@@ -541,7 +550,7 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
       * @param _signer Address of signature creator
       * @param _signature Raw signature created according to EIP-712
     */
-    function addListDelegateSigned(address _namespace, bytes32 _list, address _delegate, uint256 _untilTimestamp, address _signer, bytes calldata _signature) public whenNotPaused {
+    function addListDelegateSigned(address _namespace, bytes32 _list, address _delegate, uint256 _untilTimestamp, address _signer, bytes calldata _signature) external whenNotPaused {
         bytes32 hash = _hashTypedDataV4(keccak256(abi.encode(
             keccak256("AddListDelegateSigned(address namespace,bytes32 list,address delegate,uint256 untilTimestamp,address signer,uint256 nonce)"),
             _namespace,
@@ -563,7 +572,7 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
       * @param _list Bytes32 list identifier
       * @param _delegate Address of new delegate
     */
-    function _removeListDelegate(address _namespace, bytes32 _list, address _delegate) internal {
+    function _removeListDelegate(address _namespace, bytes32 _list, address _delegate) private {
         delegates[generateListLocationHash(_namespace, _list)][_delegate] = 0;
         emit HintListDelegateRemoved(_namespace, _list, _delegate);
     }
@@ -574,7 +583,7 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
       * @param _list Bytes32 list identifier
       * @param _delegate Address of new delegate
     */
-    function removeListDelegate(address _namespace, bytes32 _list, address _delegate) public isOwner(_namespace, _list) whenNotPaused {
+    function removeListDelegate(address _namespace, bytes32 _list, address _delegate) external isOwner(_namespace, _list) whenNotPaused {
         _removeListDelegate(_namespace, _list, _delegate);
     }
 
@@ -586,7 +595,7 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
       * @param _signer Address of signature creator
       * @param _signature Raw signature created according to EIP-712
     */
-    function removeListDelegateSigned(address _namespace, bytes32 _list, address _delegate, address _signer, bytes calldata _signature) public whenNotPaused {
+    function removeListDelegateSigned(address _namespace, bytes32 _list, address _delegate, address _signer, bytes calldata _signature) external whenNotPaused {
         bytes32 hash = _hashTypedDataV4(keccak256(abi.encode(
             keccak256("RemoveListDelegateSigned(address namespace,bytes32 list,address delegate,address signer,uint256 nonce)"),
             _namespace,
@@ -622,7 +631,7 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
       * @param _key Bytes32 key identifier for hint value
       * @param _value Bytes32 value identifier for hint value
     */
-    function setMetadata(address _namespace, bytes32 _list, bytes32 _key, bytes32 _value, bytes calldata _metadata) public isOwner(_namespace, _list) whenNotPaused {
+    function setMetadata(address _namespace, bytes32 _list, bytes32 _key, bytes32 _value, bytes calldata _metadata) external isOwner(_namespace, _list) whenNotPaused {
         metadata[generateValueLocationHash(_namespace, _list, _key, _value)] = _metadata;
     }
 
@@ -636,8 +645,8 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
       * @param _signer Address of signature creator
       * @param _signature Raw signature created according to EIP-712
     */
-    function setMetadataSigned(address _namespace, bytes32 _list, bytes32 _key, bytes32 _value, bytes calldata _metadata, address _signer, bytes calldata _signature) public whenNotPaused {
-        uint nonce = nonces[_signer];
+    function setMetadataSigned(address _namespace, bytes32 _list, bytes32 _key, bytes32 _value, bytes calldata _metadata, address _signer, bytes calldata _signature) external whenNotPaused {
+        uint256 nonce = nonces[_signer];
         bytes32 hash = _hashTypedDataV4(keccak256(abi.encode(
             keccak256("SetMetadataSigned(address namespace,bytes32 list,bytes32 key,bytes32 value,bytes metadata,address signer,uint256 nonce)"),
             _namespace,
@@ -663,7 +672,7 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
       * @param _value Bytes32 hint value
       * @param _metadata New metadata value
     */
-    function setMetadataDelegated(address _namespace, bytes32 _list, bytes32 _key, bytes32 _value, bytes calldata _metadata) public isDelegate(_namespace, _list) whenNotPaused {
+    function setMetadataDelegated(address _namespace, bytes32 _list, bytes32 _key, bytes32 _value, bytes calldata _metadata) external isDelegate(_namespace, _list) whenNotPaused {
         metadata[generateValueLocationHash(_namespace, _list, _key, _value)] = _metadata;
     }
 
@@ -677,7 +686,7 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
       * @param _signer Address of signature creator
       * @param _signature Raw signature created according to EIP-712
     */
-    function setMetadataDelegatedSigned(address _namespace, bytes32 _list, bytes32 _key, bytes32 _value, bytes calldata _metadata, address _signer, bytes calldata _signature) public whenNotPaused {
+    function setMetadataDelegatedSigned(address _namespace, bytes32 _list, bytes32 _key, bytes32 _value, bytes calldata _metadata, address _signer, bytes calldata _signature) external whenNotPaused {
         bytes32 hash = _hashTypedDataV4(keccak256(abi.encode(
             keccak256("SetMetadataDelegatedSigned(address namespace,bytes32 list,bytes32 key,bytes32 value,bytes metadata,address signer,uint256 nonce)"),
             _namespace,
@@ -701,11 +710,11 @@ contract TrustedHintRegistry is Initializable, EIP712Upgradeable, PausableUpgrad
         return string.concat(VERSION_MAJOR, VERSION_DELIMITER, VERSION_MINOR, VERSION_DELIMITER, VERSION_PATCH);
     }
 
-    function generateListLocationHash(address _namespace, bytes32 _list) pure internal returns (bytes32) {
+    function generateListLocationHash(address _namespace, bytes32 _list) pure private returns (bytes32) {
         return keccak256(abi.encodePacked(_namespace, _list));
     }
 
-    function generateValueLocationHash(address _namespace, bytes32 _list, bytes32 _key, bytes32 _value) pure internal returns (bytes32) {
+    function generateValueLocationHash(address _namespace, bytes32 _list, bytes32 _key, bytes32 _value) pure private returns (bytes32) {
         return keccak256(abi.encodePacked(_namespace, _list, _key, _value));
     }
 
